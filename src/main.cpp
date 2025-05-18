@@ -1,12 +1,11 @@
 #include <Adafruit_NeoPixel.h>
 #include <EEPROM.h>
 
-#define DATA_PIN 2  // ARGB pin
-#define BTN_PIN 3   // Button pin on board
-#define NUM_LEDS 66 // Number of LEDs in the strip
-#define MODE_ADDR 0 // EEPROM address to store mode
-
-Adafruit_NeoPixel strip(NUM_LEDS, DATA_PIN, NEO_GRB + NEO_KHZ800);
+#define DATA_PIN 2    // ARGB pin
+#define BTN_PIN 3     // Button pin on board
+#define NUM_LEDS 66   // Number of LEDs in the strip
+#define MODE_ADDR 0   // EEPROM address to store mode
+#define INBUILD_LED 9 // Inbuilt LED pin
 
 // global variables
 int mode = 0;
@@ -18,11 +17,23 @@ const unsigned long debounceDelay = 50;
 
 uint16_t rainbowOffset = 0;
 
+Adafruit_NeoPixel strip(NUM_LEDS, DATA_PIN, NEO_GRB + NEO_KHZ800);
+
+void blinkInbuiltLED()
+{
+  digitalWrite(INBUILD_LED, HIGH);
+  delay(10);
+  digitalWrite(INBUILD_LED, LOW);
+}
+
 void setup()
 {
   pinMode(BTN_PIN, INPUT_PULLUP);
+  pinMode(INBUILD_LED, OUTPUT);
+  digitalWrite(INBUILD_LED, LOW); // Turn off inbuilt LED
   // EEPROM.begin(1); // Not needed for AVR EEPROM
   EEPROM.begin();
+  blinkInbuiltLED();
   mode = EEPROM.read(MODE_ADDR);
   if (mode >= numModes)
     mode = 0; // Sanity check
@@ -47,6 +58,7 @@ void loop()
       mode = (mode + 1) % numModes;
       EEPROM.write(MODE_ADDR, mode); // Save mode
       // EEPROM.commit();            // Not needed for AVR EEPROM
+      blinkInbuiltLED();
     }
     currentButtonState = reading;
   }
