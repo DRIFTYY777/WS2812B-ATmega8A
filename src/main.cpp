@@ -1,11 +1,44 @@
+
+/*
+ * @file main.cpp
+ * @brief Arduino sketch for controlling a NeoPixel LED strip with various modes.
+ * @author DRIFTYY_777
+ * @date 2023-10-01
+ *
+ * This sketch allows you to control a NeoPixel LED strip with different lighting modes.
+ * The modes can be changed using a button, and the current mode is saved in EEPROM.
+ *
+ * WBS2812B LED strip is used in this example.
+ *
+ * Modes:
+ * 0: Red
+ * 1: Green
+ * 2: Blue
+ * 3: Cyan Pulse
+ * 4: Static Rainbow
+ * 5: ARGB-style Moving Rainbow
+ * 6: Rainbow Chase
+ *
+ */
+
 #include <Adafruit_NeoPixel.h>
 #include <EEPROM.h>
 
-#define DATA_PIN 2    // ARGB pin
-#define BTN_PIN 3     // Button pin on board
+// #define DATA_PIN 2    // ARGB pin
+// #define BTN_PIN 3     // Button pin on board
+// #define NUM_LEDS 66   // Number of LEDs in the strip
+// #define MODE_ADDR 0   // EEPROM address to store mode
+// #define INBUILD_LED 9 // Inbuilt LED pin
+
+
+#define DATA_PIN A2    // ARGB pin
+#define BTN_PIN A3     // Button pin on board
 #define NUM_LEDS 66   // Number of LEDs in the strip
 #define MODE_ADDR 0   // EEPROM address to store mode
 #define INBUILD_LED 9 // Inbuilt LED pin
+
+
+
 
 // global variables
 int mode = 0;
