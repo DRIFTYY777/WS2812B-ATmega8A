@@ -24,30 +24,25 @@
 #include <Adafruit_NeoPixel.h>
 #include <EEPROM.h>
 
-// #define DATA_PIN 2    // ARGB pin
-// #define BTN_PIN 3     // Button pin on board
-// #define NUM_LEDS 66   // Number of LEDs in the strip
-// #define MODE_ADDR 0   // EEPROM address to store mode
-// #define INBUILD_LED 9 // Inbuilt LED pin
-
-
-#define DATA_PIN A2    // ARGB pin
-#define BTN_PIN A3     // Button pin on board
+#define DATA_PIN 2    // ARGB pin
+#define BTN_PIN 3     // Button pin on board
 #define NUM_LEDS 66   // Number of LEDs in the strip
 #define MODE_ADDR 0   // EEPROM address to store mode
 #define INBUILD_LED 9 // Inbuilt LED pin
 
-
-
+// #define DATA_PIN A2   // ARGB pin
+// #define BTN_PIN A3    // Button pin on board
+// #define NUM_LEDS 66   // Number of LEDs in the strip
+// #define MODE_ADDR 0   // EEPROM address to store mode
+// #define INBUILD_LED 9 // Inbuilt LED pin
 
 // global variables
 int mode = 0;
-const int numModes = 7;
+const int numModes = 10; // Number of modes
 bool lastButtonState = HIGH;
 bool currentButtonState = HIGH;
 unsigned long lastDebounceTime = 0;
 const unsigned long debounceDelay = 50;
-
 uint16_t rainbowOffset = 0;
 
 Adafruit_NeoPixel strip(NUM_LEDS, DATA_PIN, NEO_GRB + NEO_KHZ800);
@@ -55,7 +50,7 @@ Adafruit_NeoPixel strip(NUM_LEDS, DATA_PIN, NEO_GRB + NEO_KHZ800);
 void blinkInbuiltLED()
 {
   digitalWrite(INBUILD_LED, HIGH);
-  delay(10);
+  delay(50);
   digitalWrite(INBUILD_LED, LOW);
 }
 
@@ -64,6 +59,7 @@ void setup()
   pinMode(BTN_PIN, INPUT_PULLUP);
   pinMode(INBUILD_LED, OUTPUT);
   digitalWrite(INBUILD_LED, LOW); // Turn off inbuilt LED
+
   // EEPROM.begin(1); // Not needed for AVR EEPROM
   EEPROM.begin();
   blinkInbuiltLED();
@@ -172,6 +168,42 @@ void loop()
     strip.setBrightness(255);
     strip.show();
     delay(100);
+    break;
+
+  case 7: // amber
+    for (int i = 0; i < NUM_LEDS; i++)
+    {
+      strip.setPixelColor(i, strip.Color(255, 165, 0));
+    }
+    strip.setBrightness(255);
+    strip.show();
+    break;
+
+  case 8: // purple
+    for (int i = 0; i < NUM_LEDS; i++)
+    {
+      strip.setPixelColor(i, strip.Color(128, 0, 128));
+    }
+    strip.setBrightness(255);
+    strip.show();
+    break;
+
+  case 9: // white
+    for (int i = 0; i < NUM_LEDS; i++)
+    {
+      strip.setPixelColor(i, strip.Color(255, 255, 255));
+    }
+    strip.setBrightness(255);
+    strip.show();
+    break;
+
+  case 10: // off
+    for (int i = 0; i < NUM_LEDS; i++)
+    {
+      strip.setPixelColor(i, strip.Color(0, 0, 0));
+    }
+    strip.setBrightness(0);
+    strip.show();
     break;
   }
 
