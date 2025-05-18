@@ -1,0 +1,156 @@
+/*
+WS2812B LED Strip Control with ATmega8A
+*/
+
+#include <avr/io.h>
+#include <util/delay.h>
+
+#include <uart.h>
+
+#define NUM_LEDS 2
+#define DATA_PIN 3
+
+// #define F_CPU 16000000UL
+
+#define LED_BRIGHNESS 255
+
+// set data transfer speed to 800khz
+#define T0H 3
+#define T1H 6
+#define T0L 8
+#define T1L 4
+#define RES 50
+
+USART usart;
+
+void delay()
+{
+  _delay_us(RES);
+}
+
+void initPWM()
+{
+  // set data pin as output
+  DDRD |= (1 << DATA_PIN);
+  // set data pin to low
+  PORTD &= ~(1 << DATA_PIN);
+}
+
+void sendByte(uint8_t byte)
+{
+  for (uint8_t i = 0; i < 8; i++)
+  {
+    if (byte & 0x80)
+    {
+      // '1' bit: High for ~0.8us, Low for ~0.45us
+      PORTD |= (1 << DATA_PIN);
+      asm volatile(
+          "nop\n\t"
+          "nop\n\t"
+          "nop\n\t"
+          "nop\n\t"
+          "nop\n\t"
+          "nop\n\t"
+          "nop\n\t"
+          "nop\n\t"
+          "nop\n\t"
+          "nop\n\t"
+          "nop\n\t");
+      PORTD &= ~(1 << DATA_PIN);
+      asm volatile(
+          "nop\n\t"
+          "nop\n\t"
+          "nop\n\t"
+          "nop\n\t"
+          "nop\n\t");
+    }
+    else
+    {
+      // '0' bit: High for ~0.4us, Low for ~0.85us
+      PORTD |= (1 << DATA_PIN);
+      asm volatile(
+          "nop\n\t"
+          "nop\n\t"
+          "nop\n\t"
+          "nop\n\t");
+      PORTD &= ~(1 << DATA_PIN);
+      asm volatile(
+          "nop\n\t"
+          "nop\n\t"
+          "nop\n\t"
+          "nop\n\t"
+          "nop\n\t"
+          "nop\n\t"
+          "nop\n\t"
+          "nop\n\t"
+          "nop\n\t"
+          "nop\n\t"
+          "nop\n\t"
+          "nop\n\t");
+    }
+    byte <<= 1;
+  }
+}
+
+void sendColor(uint8_t r, uint8_t g, uint8_t b)
+{
+  sendByte(g); // sent first
+  sendByte(r); // sent second
+  sendByte(b); // sent third
+}
+
+void sendReset()
+{
+  for (int i = 0; i < 50; i++)
+  {
+    PORTD &= ~(1 << DATA_PIN);
+    delay();
+  }
+}
+
+void sendColorArray(uint8_t *colors, int num)
+{
+  for (int i = 0; i < num; i++)
+  {
+    sendColor(colors[i * 3], colors[i * 3 + 1], colors[i * 3 + 2]);
+  }
+  sendReset();
+}
+
+int main()
+{
+
+  // Initialize USART
+  usart.USART_Init(MYUBRR);
+
+  // Configure PB1 as output
+  DDRB |= (1 << PB1);
+  PORTB ^= (1 << PB1);
+
+  usart.USART_SendString("Init MCU\n");
+
+  initPWM();
+
+  uint8_t colors[NUM_LEDS * 3];
+
+  while (1)
+  {
+    // Read color values from USART
+    usart.USART_SendString("Enter RGB values (R G B): ");
+    usart.USART_ReceiveString((char *)colors, NUM_LEDS * 3);
+
+    // Send the color data to the LED strip
+    sendColorArray(colors, NUM_LEDS);
+
+    usart.USART_SendString("Color sent\n");
+    // Wait for a short time before sending the next color
+    _delay_ms(1000);
+
+
+
+    // Toggle PB1 to indicate completion
+    PORTB ^= (1 << PB1);
+  }
+
+    return 0;
+}
