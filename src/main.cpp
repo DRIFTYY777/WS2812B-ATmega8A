@@ -24,17 +24,24 @@
 #include <Adafruit_NeoPixel.h>
 #include <EEPROM.h>
 
+/*
+Works on my diy board with ATmega8
+
 #define DATA_PIN 2    // ARGB pin
 #define BTN_PIN 3     // Button pin on board
+*/
+
+// Works on schematic board with ATmega8
+#define DATA_PIN A2 // ARGB pin
+#define BTN_PIN A3  // Button pin on board
+
+/* Data Pin and No of leds */
+#define INBUILD_LED 9 // Inbuilt LED pin
 #define NUM_LEDS 66   // Number of LEDs in the strip
 #define MODE_ADDR 0   // EEPROM address to store mode
-#define INBUILD_LED 9 // Inbuilt LED pin
 
-// #define DATA_PIN A2   // ARGB pin
-// #define BTN_PIN A3    // Button pin on board
-// #define NUM_LEDS 66   // Number of LEDs in the strip
-// #define MODE_ADDR 0   // EEPROM address to store mode
-// #define INBUILD_LED 9 // Inbuilt LED pin
+// prevent leds burning out because we did not use any resistors and diode
+#define BRIGHTNESS 200 // Brightness level (0-255)
 
 // global variables
 int mode = 0;
@@ -67,6 +74,7 @@ void setup()
   if (mode >= numModes)
     mode = 0; // Sanity check
   strip.begin();
+  strip.setBrightness(BRIGHTNESS);
   strip.show();
 }
 
@@ -203,9 +211,9 @@ void loop()
       strip.setPixelColor(i, strip.Color(0, 0, 0));
     }
     strip.setBrightness(0);
+    strip.clear();
     strip.show();
     break;
   }
-
   delay(10);
 }
