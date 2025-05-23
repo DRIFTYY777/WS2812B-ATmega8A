@@ -1,4 +1,4 @@
-# WS2812B LED Strip Controller with ATmega8A
+# WS2812B LED Strip Controller with ATmega8A/ATmega8
 
 This project demonstrates a simple yet powerful RGB LED strip controller using the **WS2812B** LED strip and **ATmega8A** microcontroller. The firmware is written in **Arduino** using the Arduino bootloader and runs at a **16 MHz clock speed**.
 
