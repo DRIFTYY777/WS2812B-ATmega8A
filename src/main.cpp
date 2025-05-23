@@ -27,12 +27,12 @@
 /*
 Works on my diy board with ATmega8
 */
-#define DATA_PIN 2 // ARGB pin
-#define BTN_PIN 3  // Button pin on board
+// #define DATA_PIN 2 // ARGB pin
+// #define BTN_PIN 3  // Button pin on board
 
 // Works on schematic board with ATmega8
-// #define DATA_PIN A2 // ARGB pin
-// #define BTN_PIN A3  // Button pin on board
+#define DATA_PIN A2 // ARGB pin
+#define BTN_PIN A3  // Button pin on board
 
 /* Data Pin and No of leds */
 #define INBUILD_LED 9 // Inbuilt LED pin
@@ -53,6 +53,7 @@ uint16_t rainbowOffset = 0;
 
 Adafruit_NeoPixel strip(NUM_LEDS, DATA_PIN, NEO_GRB + NEO_KHZ800);
 
+// Function to blink the inbuilt LED for feedback
 void blinkInbuiltLED()
 {
   digitalWrite(INBUILD_LED, HIGH);
@@ -79,7 +80,7 @@ void setup()
 
 void loop()
 {
-  // -------- Button Handling --------
+  //  Button Handling
   bool reading = digitalRead(BTN_PIN);
   if (reading != lastButtonState)
   {
@@ -98,7 +99,7 @@ void loop()
   }
   lastButtonState = reading;
 
-  // -------- Mode Handling --------
+  // Mode Handling
   switch (mode)
   {
   case 0: // Red
