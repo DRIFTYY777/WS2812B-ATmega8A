@@ -82,12 +82,10 @@ void loop()
 {
   // -------- Button Handling --------
   bool reading = digitalRead(BTN_PIN);
-
   if (reading != lastButtonState)
   {
     lastDebounceTime = millis();
   }
-
   if ((millis() - lastDebounceTime) > debounceDelay)
   {
     if (currentButtonState == HIGH && reading == LOW)
@@ -99,27 +97,26 @@ void loop()
     }
     currentButtonState = reading;
   }
-
   lastButtonState = reading;
 
   // -------- Mode Handling --------
   switch (mode)
   {
-  case 0:
+  case 0: // Red
     strip.fill(strip.Color(255, 0, 0));
-    strip.setBrightness(255);
+    strip.setBrightness(BRIGHTNESS);
     strip.show();
     break;
 
-  case 1:
+  case 1: // Green
     strip.fill(strip.Color(0, 255, 0));
-    strip.setBrightness(255);
+    strip.setBrightness(BRIGHTNESS);
     strip.show();
     break;
 
-  case 2:
+  case 2: // Blue
     strip.fill(strip.Color(0, 0, 255));
-    strip.setBrightness(255);
+    strip.setBrightness(BRIGHTNESS);
     strip.show();
     break;
 
@@ -134,7 +131,7 @@ void loop()
     {
       lastPulseUpdate = millis();
       brightness += fadeDirection;
-      if (brightness == 255 || brightness == 0)
+      if (brightness == BRIGHTNESS || brightness == 0)
         fadeDirection *= -1;
 
       strip.fill(strip.Color(0, 255, 255));
@@ -149,7 +146,7 @@ void loop()
     {
       strip.setPixelColor(i, strip.ColorHSV(i * 65536L / NUM_LEDS));
     }
-    strip.setBrightness(255);
+    strip.setBrightness(BRIGHTNESS);
     strip.show();
     delay(50);
     break;
@@ -161,7 +158,7 @@ void loop()
       strip.setPixelColor(i, strip.ColorHSV(color));
     }
     rainbowOffset += 256;
-    strip.setBrightness(255);
+    strip.setBrightness(BRIGHTNESS);
     strip.show();
     delay(50);
     break;
@@ -173,7 +170,7 @@ void loop()
       strip.setPixelColor(i, strip.ColorHSV(hue));
     }
     rainbowOffset += 1000;
-    strip.setBrightness(255);
+    strip.setBrightness(BRIGHTNESS);
     strip.show();
     delay(100);
     break;
@@ -183,7 +180,7 @@ void loop()
     {
       strip.setPixelColor(i, strip.Color(255, 165, 0));
     }
-    strip.setBrightness(255);
+    strip.setBrightness(BRIGHTNESS);
     strip.show();
     break;
 
@@ -192,7 +189,7 @@ void loop()
     {
       strip.setPixelColor(i, strip.Color(128, 0, 128));
     }
-    strip.setBrightness(255);
+    strip.setBrightness(BRIGHTNESS);
     strip.show();
     break;
 
@@ -201,7 +198,7 @@ void loop()
     {
       strip.setPixelColor(i, strip.Color(255, 255, 255));
     }
-    strip.setBrightness(255);
+    strip.setBrightness(BRIGHTNESS);
     strip.show();
     break;
 
