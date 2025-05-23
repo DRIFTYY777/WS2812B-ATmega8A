@@ -42,8 +42,8 @@ Below are some images of the working setup and prototype:
 
 | Image | Description |
 |-------|-------------|
-| ![IMG_9293](https://github.com/DRIFTYY777/WS2812B-ATmega8A/raw/main/images/IMG_9293.png) | Project Setup |
-| ![IMG_9295](https://github.com/DRIFTYY777/WS2812B-ATmega8A/raw/main/images/IMG_9295.png) | Working Prototype |
+| ![IMG_9293](https://github.com/DRIFTYY777/WS2812B-ATmega8A/raw/main/images/IMG_9293.png) | Diy Board |
+| ![IMG_9295](https://github.com/DRIFTYY777/WS2812B-ATmega8A/raw/main/images/IMG_9295.png) | ATmega8A DIP |
 | ![IMG_9298](https://github.com/DRIFTYY777/WS2812B-ATmega8A/raw/main/images/IMG_9298.gif) | Mode Demonstration |
 
 > 🔗 More images available in the [Images folder](https://github.com/DRIFTYY777/WS2812B-ATmega8A/tree/main/images)
