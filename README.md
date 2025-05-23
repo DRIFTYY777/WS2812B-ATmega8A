@@ -54,7 +54,7 @@ Below are some images of the working setup and prototype:
 
 You can find the circuit schematic below:
 
-📄 [Schematic_WBS2812B-ATmega8A.pdf](https://github.com/DRIFTYY777/WS2812B-ATmega8A/raw/main/schematic/Schematic_WBS2812B-ATmega8A.pdf)
+📄 [Schematic_WBS2812B-ATmega8A.pdf](https://github.com/DRIFTYY777/WS2812B-ATmega8A/blob/main/schematic/Schematic_WBS2812B-ATmgea8A.pdf)
 
 > 🗂 Full schematic files are available in the [schematic folder](https://github.com/DRIFTYY777/WS2812B-ATmega8A/tree/main/schematic)
 
