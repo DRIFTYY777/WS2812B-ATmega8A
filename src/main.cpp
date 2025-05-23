@@ -26,14 +26,13 @@
 
 /*
 Works on my diy board with ATmega8
-
-#define DATA_PIN 2    // ARGB pin
-#define BTN_PIN 3     // Button pin on board
 */
+#define DATA_PIN 2 // ARGB pin
+#define BTN_PIN 3  // Button pin on board
 
 // Works on schematic board with ATmega8
-#define DATA_PIN A2 // ARGB pin
-#define BTN_PIN A3  // Button pin on board
+// #define DATA_PIN A2 // ARGB pin
+// #define BTN_PIN A3  // Button pin on board
 
 /* Data Pin and No of leds */
 #define INBUILD_LED 9 // Inbuilt LED pin
@@ -45,7 +44,7 @@ Works on my diy board with ATmega8
 
 // global variables
 int mode = 0;
-const int numModes = 10; // Number of modes
+const int numModes = 11; // Number of modes
 bool lastButtonState = HIGH;
 bool currentButtonState = HIGH;
 unsigned long lastDebounceTime = 0;
