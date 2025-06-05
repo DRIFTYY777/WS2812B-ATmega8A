@@ -1,4 +1,3 @@
-
 /*
  * @file main.cpp
  * @brief Arduino sketch for controlling a NeoPixel LED strip with various modes.
@@ -18,19 +17,26 @@
  * 4: Static Rainbow
  * 5: ARGB-style Moving Rainbow
  * 6: Rainbow Chase
+ * 7: Amber
+ * 8: Purple
+ * 9: White
+ * 10: Off
  *
- */
+ *
+ * Note this code also works with ATmega328p (Arduino uno) and other boards which support Arduino api.
+ *
 
+ */
 #include <Adafruit_NeoPixel.h>
 #include <EEPROM.h>
 
 /*
-Works on my diy board with ATmega8
+Works on my diy board with ATmega8a
 */
 // #define DATA_PIN 2 // ARGB pin
 // #define BTN_PIN 3  // Button pin on board
 
-// Works on schematic board with ATmega8
+// Works on a schematic board with ATmega8a
 #define DATA_PIN A2 // ARGB pin
 #define BTN_PIN A3  // Button pin on board
 
@@ -44,11 +50,11 @@ Works on my diy board with ATmega8
 
 // global variables
 int mode = 0;
-const int numModes = 11; // Number of modes
+constexpr int numModes = 11; // Number of modes
 bool lastButtonState = HIGH;
 bool currentButtonState = HIGH;
 unsigned long lastDebounceTime = 0;
-const unsigned long debounceDelay = 50;
+constexpr unsigned long debounceDelay = 50;
 uint16_t rainbowOffset = 0;
 
 Adafruit_NeoPixel strip(NUM_LEDS, DATA_PIN, NEO_GRB + NEO_KHZ800);
@@ -103,19 +109,19 @@ void loop()
   switch (mode)
   {
   case 0: // Red
-    strip.fill(strip.Color(255, 0, 0));
+    strip.fill(Adafruit_NeoPixel::Color(255, 0, 0));
     strip.setBrightness(BRIGHTNESS);
     strip.show();
     break;
 
   case 1: // Green
-    strip.fill(strip.Color(0, 255, 0));
+    strip.fill(Adafruit_NeoPixel::Color(0, 255, 0));
     strip.setBrightness(BRIGHTNESS);
     strip.show();
     break;
 
   case 2: // Blue
-    strip.fill(strip.Color(0, 0, 255));
+    strip.fill(Adafruit_NeoPixel::Color(0, 0, 255));
     strip.setBrightness(BRIGHTNESS);
     strip.show();
     break;
@@ -125,16 +131,15 @@ void loop()
     static uint8_t brightness = 0;
     static int fadeDirection = 1;
     static unsigned long lastPulseUpdate = 0;
-    const unsigned long pulseInterval = 5;
 
-    if (millis() - lastPulseUpdate >= pulseInterval)
+    if (constexpr unsigned long pulseInterval = 5; millis() - lastPulseUpdate >= pulseInterval)
     {
       lastPulseUpdate = millis();
       brightness += fadeDirection;
       if (brightness == BRIGHTNESS || brightness == 0)
         fadeDirection *= -1;
 
-      strip.fill(strip.Color(0, 255, 255));
+      strip.fill(Adafruit_NeoPixel::Color(0, 255, 255));
       strip.setBrightness(brightness);
       strip.show();
     }
@@ -144,7 +149,7 @@ void loop()
   case 4: // Static Rainbow
     for (int i = 0; i < NUM_LEDS; i++)
     {
-      strip.setPixelColor(i, strip.ColorHSV(i * 65536L / NUM_LEDS));
+      strip.setPixelColor(i, Adafruit_NeoPixel::ColorHSV(i * 65536L / NUM_LEDS));
     }
     strip.setBrightness(BRIGHTNESS);
     strip.show();
@@ -155,7 +160,7 @@ void loop()
     for (int i = 0; i < NUM_LEDS; i++)
     {
       uint16_t color = (i * 65536L / NUM_LEDS + rainbowOffset) % 65536;
-      strip.setPixelColor(i, strip.ColorHSV(color));
+      strip.setPixelColor(i, Adafruit_NeoPixel::ColorHSV(color));
     }
     rainbowOffset += 256;
     strip.setBrightness(BRIGHTNESS);
@@ -163,22 +168,23 @@ void loop()
     delay(50);
     break;
 
-  case 6: // Rainbow Chase
-    for (int i = 0; i < NUM_LEDS; i++)
-    {
-      uint16_t hue = ((i * 1000) + rainbowOffset) % 65536;
-      strip.setPixelColor(i, strip.ColorHSV(hue));
-    }
-    rainbowOffset += 1000;
-    strip.setBrightness(BRIGHTNESS);
-    strip.show();
-    delay(100);
-    break;
+    case 6: // Rainbow Chase
+      for (int i = 0; i < NUM_LEDS; i++)
+      {
+        // Use unsigned long to prevent overflow
+        const uint16_t hue = ((static_cast<uint32_t>(i) * 1000UL) + rainbowOffset) % 65536;
+        strip.setPixelColor(i, Adafruit_NeoPixel::ColorHSV(hue));
+      }
+      rainbowOffset += 1000;
+      strip.setBrightness(BRIGHTNESS);
+      strip.show();
+      delay(100);
+      break;
 
   case 7: // amber
     for (int i = 0; i < NUM_LEDS; i++)
     {
-      strip.setPixelColor(i, strip.Color(255, 165, 0));
+      strip.setPixelColor(i, Adafruit_NeoPixel::Color(255, 165, 0));
     }
     strip.setBrightness(BRIGHTNESS);
     strip.show();
@@ -187,7 +193,7 @@ void loop()
   case 8: // purple
     for (int i = 0; i < NUM_LEDS; i++)
     {
-      strip.setPixelColor(i, strip.Color(128, 0, 128));
+      strip.setPixelColor(i, Adafruit_NeoPixel::Color(128, 0, 128));
     }
     strip.setBrightness(BRIGHTNESS);
     strip.show();
@@ -196,7 +202,7 @@ void loop()
   case 9: // white
     for (int i = 0; i < NUM_LEDS; i++)
     {
-      strip.setPixelColor(i, strip.Color(255, 255, 255));
+      strip.setPixelColor(i, Adafruit_NeoPixel::Color(255, 255, 255));
     }
     strip.setBrightness(BRIGHTNESS);
     strip.show();
@@ -205,12 +211,14 @@ void loop()
   case 10: // off
     for (int i = 0; i < NUM_LEDS; i++)
     {
-      strip.setPixelColor(i, strip.Color(0, 0, 0));
+      strip.setPixelColor(i, Adafruit_NeoPixel::Color(0, 0, 0));
     }
     strip.setBrightness(0);
     strip.clear();
     strip.show();
     break;
+  default:
+      break;
   }
   delay(10);
 }
