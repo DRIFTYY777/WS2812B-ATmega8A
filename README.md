@@ -169,5 +169,6 @@ This project is open source and available under the [MIT License](LICENSE).
 
 ## 📊 Version History
 
-- **v2.0** - Optimized code structure, added sleep mode with dual effects
+- **v2.5** - Added sleep mode with dual effects, optimized memory usage
+- **v2.0** - Optimized code structure and performance, added new lighting modes
 - **v1.0** - Initial release with basic color modes and rainbow effects
