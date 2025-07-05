@@ -17,7 +17,7 @@
  * 4: Static Rainbow
  * 5: ARGB-style Moving Rainbow
  * 6: Rainbow Chase
- * 7: Amber
+ * 7: Amber Pulse
  * 8: Purple
  * 9: White
  * 10: Sleep Mode
@@ -40,10 +40,10 @@
   Works on my diy board with ATmega8a
 */
 
-// #define DATA_PIN 2 // ARGB pin
-// #define BTN_PIN 3  // Button pin on board
+//#define DATA_PIN 2 // ARGB pin
+//#define BTN_PIN 3  // Button pin on board
 
-// Works on a schematic board with ATmega8a
+// Works on a schematic board with ATmega8a given below
 #define DATA_PIN A2 // ARGB pin
 #define BTN_PIN A3  // Button pin on board
 
@@ -181,7 +181,9 @@ void transitionFade(uint32_t colorFrom, uint32_t colorTo, uint8_t steps, uint16_
 
 ///@brief Handles the pulse effect in sleep mode.
 void handlePulse(unsigned long now) {
-  const float progress = (now % PULSE_DURATION) / static_cast<float>(PULSE_DURATION);
+  const float progress = static_cast<float>(now % PULSE_DURATION) /
+    static_cast<float>(PULSE_DURATION);
+
   const uint8_t pulseBrightness = sineFade(progress);
 
   // Handle flickering
@@ -332,6 +334,26 @@ void handleCyanPulse() {
   }
 }
 
+void handelAmberPulse() {
+  static uint8_t brightness = 0;
+  static int8_t fadeDirection = 1;
+  static unsigned long lastPulseUpdate = 0;
+
+  if (millis() - lastPulseUpdate >= 5) {
+    lastPulseUpdate = millis();
+    brightness += fadeDirection;
+
+    if (brightness == BRIGHTNESS || brightness == 0) {
+      fadeDirection *= -1;
+    }
+
+    // Amber color: RGB(255, 165, 0)
+    strip.fill(createColor(255, 165, 0));
+    strip.setBrightness(brightness);
+    updateStrip();
+  }
+}
+
 ///@brief Static rainbow effect
 void handleStaticRainbow() {
   for (int i = 0; i < NUM_LEDS; i++) {
@@ -417,19 +439,18 @@ void loop() {
 
   // Handle the current mode
   switch (static_cast<LightMode>(state.mode)) {
-    case RED:     handleStaticColor(createColor(255, 0, 0)); break;
-    case GREEN:   handleStaticColor(createColor(0, 255, 0)); break;
-    case BLUE:    handleStaticColor(createColor(0, 0, 255)); break;
-    case CYAN_PULSE: handleCyanPulse(); break;
-    case STATIC_RAINBOW: handleStaticRainbow(); delay(50); break;
-    case MOVING_RAINBOW: handleMovingRainbow(); delay(50); break;
-    case RAINBOW_CHASE: handleRainbowChase(); delay(100); break;
-    case AMBER:   handleStaticColor(createColor(255, 165, 0)); break;
-    case PURPLE:  handleStaticColor(createColor(128, 0, 128)); break;
-    case WHITE:   handleStaticColor(createColor(255, 255, 255)); break;
-    case SLEEP:   sleepMode(); break;
-    case OFF:     handleOffMode(); break;
+    case RED:     handleStaticColor(createColor(255, 0, 0)); break; // Red color
+    case GREEN:   handleStaticColor(createColor(0, 255, 0)); break; // Green color
+    case BLUE:    handleStaticColor(createColor(0, 0, 255)); break; //
+    case CYAN_PULSE: handleCyanPulse(); break; // Cyan pulse effect
+    case STATIC_RAINBOW: handleStaticRainbow(); delay(50); break; // Static rainbow effect
+    case MOVING_RAINBOW: handleMovingRainbow(); delay(50); break; // Moving rainbow effect
+    case RAINBOW_CHASE: handleRainbowChase(); delay(100); break; // Rainbow chase effect
+    case AMBER:   handelAmberPulse(); break; // Amber color
+    case PURPLE:  handleStaticColor(createColor(128, 0, 128)); break; // Purple color
+    case WHITE:   handleStaticColor(createColor(255, 255, 255)); break; // White color
+    case SLEEP:   sleepMode(); break; // Sleep mode with sub-modes
+    case OFF:     handleOffMode(); break; // Off mode
   }
-
   delay(10);
 }
