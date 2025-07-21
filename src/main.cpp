@@ -20,7 +20,7 @@
  * 7: Amber Pulse
  * 8: Purple
  * 9: White
- * 10: Sleep Mode
+ * 10: Random Fade
  * 11: Off
  *
  *
@@ -34,6 +34,7 @@
  */
 
 #include <Adafruit_NeoPixel.h>
+#include "uart.h"
 #include <EEPROM.h>
 
 /*
@@ -55,15 +56,10 @@
 // prevent leds burning out because we did not use any resistors and diode
 #define BRIGHTNESS 200 // Brightness level (0-255)
 
-
 // Timing constants
 constexpr unsigned long DEBOUNCE_DELAY = 50;
-constexpr unsigned long PULSE_DURATION = 12000;
-constexpr unsigned long SWITCH_INTERVAL = 20000;
 constexpr unsigned long FADE_UPDATE_INTERVAL = 30;
 constexpr unsigned long NEW_LED_INTERVAL = 500;
-constexpr unsigned long FLICKER_STEP_DELAY = 20;
-constexpr unsigned long FLICKER_INTERVAL = 500;
 
 // Mode constants
 constexpr int NUM_MODES = 12;
@@ -74,6 +70,8 @@ constexpr int ACTIVE_FADE_LIMIT = 30;
  * @brief NeoPixel LED strip instance
  */
 Adafruit_NeoPixel strip(NUM_LEDS, DATA_PIN, NEO_GRB + NEO_KHZ800);
+USART uart;
+
 
 // Global LED modes
 enum LightMode {
@@ -87,14 +85,8 @@ enum LightMode {
   AMBER,
   PURPLE,
   WHITE,
-  SLEEP,
+  RANDOM_FADE,
   OFF
-};
-
-// Sleep sub-modes
-enum SleepSubMode {
-  PULSE,
-  RANDOM_FADE
 };
 
 // Fade LED structure
@@ -119,9 +111,6 @@ struct SystemState {
   unsigned long lastDebounceTime = 0;
   uint16_t rainbowOffset = 0;
 
-  // Sleep mode state
-  SleepSubMode sleepMode = PULSE;
-  unsigned long lastSwitch = 0;
   unsigned long lastFadeUpdate = 0;
 
   // Pulse mode state
@@ -179,51 +168,8 @@ void transitionFade(uint32_t colorFrom, uint32_t colorTo, uint8_t steps, uint16_
   }
 }
 
-///@brief Handles the pulse effect in sleep mode.
-void handlePulse(unsigned long now) {
-  const float progress = static_cast<float>(now % PULSE_DURATION) /
-    static_cast<float>(PULSE_DURATION);
-
-  const uint8_t pulseBrightness = sineFade(progress);
-
-  // Handle flickering
-  if (state.isFlickering) {
-    if (now - state.lastFlickerUpdate > FLICKER_STEP_DELAY) {
-      state.lastFlickerUpdate = now;
-      state.flickerBrightness += state.flickerDirection * 15;
-
-      if (state.flickerBrightness >= 255) {
-        state.flickerBrightness = 255;
-        state.flickerDirection = -1;
-      } else if (state.flickerBrightness <= 0) {
-        state.flickerBrightness = 0;
-        state.isFlickering = false;
-      }
-    }
-  } else if (now - state.lastFlickerUpdate > FLICKER_INTERVAL) {
-    state.flickerLed = random(NUM_LEDS);
-    state.flickerBrightness = 0;
-    state.flickerDirection = 1;
-    state.isFlickering = true;
-    state.lastFlickerUpdate = now;
-  }
-
-  // Render LEDs
-  for (int i = 0; i < NUM_LEDS; i++) {
-    uint8_t r = pulseBrightness;
-    uint8_t g = pulseBrightness / 5;
-
-    if (i == state.flickerLed && state.isFlickering) {
-      r = max(r, state.flickerBrightness);
-      g = max(g, state.flickerBrightness / 15);
-    }
-
-    strip.setPixelColor(i, createColor(r, g, 0));
-  }
-}
-
-/// @brief Handles the random fade effect in sleep mode.
-void handleRandomFade(unsigned long now) {
+/// @brief Handles the random fade effect.
+void randomFadeAmber(const unsigned long now) {
   // Add new LEDs
   if (state.activeFadeLeds < ACTIVE_FADE_LIMIT &&
       now - state.lastNewLedTime > NEW_LED_INTERVAL) {
@@ -249,6 +195,7 @@ void handleRandomFade(unsigned long now) {
       if (state.fadeLeds[i].active) {
         state.fadeLeds[i].brightness += state.fadeLeds[i].direction * 5;
 
+
         if (state.fadeLeds[i].brightness >= 255) {
           state.fadeLeds[i].brightness = 255;
           state.fadeLeds[i].direction = -1;
@@ -266,45 +213,8 @@ void handleRandomFade(unsigned long now) {
       }
     }
     state.lastFadeUpdate = now;
+    updateStrip(); // Add this line to actually display the changes
   }
-}
-
-///@brief Sleep mode function
-void sleepMode() {
-  const unsigned long now = millis();
-
-  // Mode switching
-  if (now - state.lastSwitch > SWITCH_INTERVAL) {
-    const uint32_t fromColor = (state.sleepMode == PULSE)
-      ? createColor(255, 50, 0)
-      : createColor(128, 25, 0);
-
-    state.sleepMode = (state.sleepMode == PULSE) ? RANDOM_FADE : PULSE;
-    state.lastSwitch = now;
-
-    // Reset fade LEDs when switching to random fade
-    if (state.sleepMode == RANDOM_FADE) {
-      for (int i = 0; i < MAX_FADE_LEDS; i++) {
-        state.fadeLeds[i].reset();
-      }
-      state.activeFadeLeds = 0;
-    }
-
-    const uint32_t toColor = (state.sleepMode == PULSE)
-      ? createColor(255, 50, 0)
-      : createColor(128, 25, 0);
-
-    transitionFade(fromColor, toColor, 50, 15);
-  }
-
-  // Execute current sub-mode
-  if (state.sleepMode == PULSE) {
-    handlePulse(now);
-  } else {
-    handleRandomFade(now);
-  }
-
-  updateStrip();
 }
 
 ///@brief Mode handlers
@@ -411,7 +321,10 @@ void handleButton() {
   state.lastButtonState = reading;
 }
 
+
 void setup() {
+
+  uart.USART_Init(9600);
 
   randomSeed(analogRead(0)); // Seed randomness
 
@@ -428,15 +341,18 @@ void setup() {
     state.mode = 0; // Sanity check
   }
 
+
   strip.begin();
   strip.setBrightness(BRIGHTNESS);
   strip.show();
+
+  uart.println("system initialized");
+
 }
 
 void loop() {
   //  Button Handling
   handleButton();
-
   // Handle the current mode
   switch (static_cast<LightMode>(state.mode)) {
     case RED:     handleStaticColor(createColor(255, 0, 0)); break; // Red color
@@ -448,8 +364,8 @@ void loop() {
     case RAINBOW_CHASE: handleRainbowChase(); delay(100); break; // Rainbow chase effect
     case AMBER:   handelAmberPulse(); break; // Amber color
     case PURPLE:  handleStaticColor(createColor(128, 0, 128)); break; // Purple color
-    case WHITE:   handleStaticColor(createColor(255, 255, 255)); break; // White color
-    case SLEEP:   sleepMode(); break; // Sleep mode with sub-modes
+    case WHITE:   handleStaticColor(createColor(255, 200, 255)); break; // White color
+    case RANDOM_FADE:   randomFadeAmber(millis()); break; // Sleep mode with sub-modes
     case OFF:     handleOffMode(); break; // Off mode
   }
   delay(10);

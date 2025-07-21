@@ -50,3 +50,13 @@ void USART::USART_ReceiveString(char *str, unsigned int length)
     }
     str[length] = '\0'; // Null-terminate the string
 }
+
+
+void USART::printf(const char *format, ...) {
+    USART_SendString(format);
+}
+
+void USART::println(const char *str) {
+    USART_SendString(str);
+    USART_Transmit('\n');
+}

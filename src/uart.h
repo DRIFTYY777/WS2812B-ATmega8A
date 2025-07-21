@@ -16,6 +16,11 @@ public:
     unsigned char USART_Receive(void);
     void USART_Flush(void);
     void USART_ReceiveString(char *str, unsigned int length);
+
+
+    void printf(const char *format, ...);
+    void println(const char *str);
+
 };
 
 #endif // UART_H)
