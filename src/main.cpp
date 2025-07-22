@@ -31,27 +31,26 @@
  * 4: Copy the code into your Arduino IDE.
  * 5: Upload the sketch to your Arduino board.
  *
+ * 
+ * 
+ */
+
+/*
+ * Simulation Link:
+ * https://wokwi.com/projects/432899754435850241
+ * 
+ * Project Link:
+ * https://github.com/DRIFTYY777/WS2812B-ATmega8A
+ *
  */
 
 #include <Adafruit_NeoPixel.h>
-#include "uart.h"
 #include <EEPROM.h>
+#include <boards.h>
 
-/*
-  Works on my diy board with ATmega8a
-*/
-
-//#define DATA_PIN 2 // ARGB pin
-//#define BTN_PIN 3  // Button pin on board
-
-// Works on a schematic board with ATmega8a given below
-#define DATA_PIN A2 // ARGB pin
-#define BTN_PIN A3  // Button pin on board
-
-/* Data Pin and No of leds */
-#define INBUILD_LED 9 // Inbuilt LED pin
-#define NUM_LEDS 66   // Number of LEDs in the strip
-#define MODE_ADDR 0   // EEPROM address to store mode
+/* Leds Counts */
+#define NUM_LEDS 66 // Number of LEDs in the strip
+#define MODE_ADDR 0 // EEPROM address to store mode
 
 // prevent leds burning out because we did not use any resistors and diode
 #define BRIGHTNESS 200 // Brightness level (0-255)
@@ -70,11 +69,10 @@ constexpr int ACTIVE_FADE_LIMIT = 30;
  * @brief NeoPixel LED strip instance
  */
 Adafruit_NeoPixel strip(NUM_LEDS, DATA_PIN, NEO_GRB + NEO_KHZ800);
-USART uart;
-
 
 // Global LED modes
-enum LightMode {
+enum LightMode
+{
   RED = 0,
   GREEN,
   BLUE,
@@ -90,13 +88,15 @@ enum LightMode {
 };
 
 // Fade LED structure
-struct FadeLED {
+struct FadeLED
+{
   uint8_t index;
   uint8_t brightness;
   int8_t direction;
   bool active;
 
-  void reset() {
+  void reset()
+  {
     brightness = 0;
     direction = 1;
     active = false;
@@ -104,7 +104,8 @@ struct FadeLED {
 };
 
 // Global state
-struct SystemState {
+struct SystemState
+{
   int mode = 0;
   bool lastButtonState = HIGH;
   bool currentButtonState = HIGH;
@@ -113,13 +114,6 @@ struct SystemState {
 
   unsigned long lastFadeUpdate = 0;
 
-  // Pulse mode state
-  uint8_t flickerLed = 0;
-  uint8_t flickerBrightness = 0;
-  int8_t flickerDirection = 1;
-  unsigned long lastFlickerUpdate = 0;
-  bool isFlickering = false;
-
   // Random fade state
   FadeLED fadeLeds[MAX_FADE_LEDS];
   int activeFadeLeds = 0;
@@ -127,34 +121,41 @@ struct SystemState {
 } state;
 
 // Utility functions
-inline uint8_t sineFade(float progress) {
+inline uint8_t sineFade(float progress)
+{
   return static_cast<uint8_t>(127.5f * (1.0f + sin(progress * PI * 2.0f - PI / 2.0f)));
 }
 
-inline uint32_t createColor(uint8_t r, uint8_t g, uint8_t b) {
+inline uint32_t createColor(uint8_t r, uint8_t g, uint8_t b)
+{
   return Adafruit_NeoPixel::Color(r, g, b);
 }
 
-void clearStrip() {
+void clearStrip()
+{
   strip.clear();
 }
 
-void updateStrip() {
+void updateStrip()
+{
   strip.show();
 }
 
 /// @brief Blinks the inbuilt LED to indicate a mode change.
-void blinkInbuiltLED() {
+void blinkInbuiltLED()
+{
   digitalWrite(INBUILD_LED, HIGH);
   delay(50);
   digitalWrite(INBUILD_LED, LOW);
 }
 
 ///@brief Handles the transitionFade between two colors.
-void transitionFade(uint32_t colorFrom, uint32_t colorTo, uint8_t steps, uint16_t delayMs) {
+void transitionFade(uint32_t colorFrom, uint32_t colorTo, uint8_t steps, uint16_t delayMs)
+{
   const float stepSize = 1.0f / steps;
 
-  for (uint8_t i = 0; i <= steps; i++) {
+  for (uint8_t i = 0; i <= steps; i++)
+  {
     const float t = i * stepSize;
     const float invT = 1.0f - t;
 
@@ -169,13 +170,17 @@ void transitionFade(uint32_t colorFrom, uint32_t colorTo, uint8_t steps, uint16_
 }
 
 /// @brief Handles the random fade effect.
-void randomFadeAmber(const unsigned long now) {
+void randomFadeAmber(const unsigned long now)
+{
   // Add new LEDs
   if (state.activeFadeLeds < ACTIVE_FADE_LIMIT &&
-      now - state.lastNewLedTime > NEW_LED_INTERVAL) {
+      now - state.lastNewLedTime > NEW_LED_INTERVAL)
+  {
 
-    for (int i = 0; i < MAX_FADE_LEDS; i++) {
-      if (!state.fadeLeds[i].active) {
+    for (int i = 0; i < MAX_FADE_LEDS; i++)
+    {
+      if (!state.fadeLeds[i].active)
+      {
         state.fadeLeds[i].index = random(NUM_LEDS);
         state.fadeLeds[i].brightness = 0;
         state.fadeLeds[i].direction = 1;
@@ -188,27 +193,33 @@ void randomFadeAmber(const unsigned long now) {
   }
 
   // Update LEDs
-  if (now - state.lastFadeUpdate > FADE_UPDATE_INTERVAL) {
+  if (now - state.lastFadeUpdate > FADE_UPDATE_INTERVAL)
+  {
     clearStrip();
 
-    for (int i = 0; i < MAX_FADE_LEDS; i++) {
-      if (state.fadeLeds[i].active) {
+    for (int i = 0; i < MAX_FADE_LEDS; i++)
+    {
+      if (state.fadeLeds[i].active)
+      {
         state.fadeLeds[i].brightness += state.fadeLeds[i].direction * 5;
 
-
-        if (state.fadeLeds[i].brightness >= 255) {
+        if (state.fadeLeds[i].brightness >= 255)
+        {
           state.fadeLeds[i].brightness = 255;
           state.fadeLeds[i].direction = -1;
-        } else if (state.fadeLeds[i].brightness <= 0) {
+        }
+        else if (state.fadeLeds[i].brightness <= 0)
+        {
           state.fadeLeds[i].brightness = 0;
           state.fadeLeds[i].active = false;
           state.activeFadeLeds--;
         }
 
-        if (state.fadeLeds[i].active) {
+        if (state.fadeLeds[i].active)
+        {
           const uint8_t brightness = state.fadeLeds[i].brightness;
           strip.setPixelColor(state.fadeLeds[i].index,
-            createColor(brightness, brightness / 5, 0));
+                              createColor(brightness, brightness / 5, 0));
         }
       }
     }
@@ -218,23 +229,27 @@ void randomFadeAmber(const unsigned long now) {
 }
 
 ///@brief Mode handlers
-void handleStaticColor(uint32_t color) {
+void handleStaticColor(uint32_t color)
+{
   strip.fill(color);
   strip.setBrightness(BRIGHTNESS);
   updateStrip();
 }
 
 // Handle cyan pulse effect
-void handleCyanPulse() {
+void handleCyanPulse()
+{
   static uint8_t brightness = 0;
   static int8_t fadeDirection = 1;
   static unsigned long lastPulseUpdate = 0;
 
-  if (millis() - lastPulseUpdate >= 5) {
+  if (millis() - lastPulseUpdate >= 5)
+  {
     lastPulseUpdate = millis();
     brightness += fadeDirection;
 
-    if (brightness == BRIGHTNESS || brightness == 0) {
+    if (brightness == BRIGHTNESS || brightness == 0)
+    {
       fadeDirection *= -1;
     }
 
@@ -244,16 +259,19 @@ void handleCyanPulse() {
   }
 }
 
-void handelAmberPulse() {
+void handelAmberPulse()
+{
   static uint8_t brightness = 0;
   static int8_t fadeDirection = 1;
   static unsigned long lastPulseUpdate = 0;
 
-  if (millis() - lastPulseUpdate >= 5) {
+  if (millis() - lastPulseUpdate >= 5)
+  {
     lastPulseUpdate = millis();
     brightness += fadeDirection;
 
-    if (brightness == BRIGHTNESS || brightness == 0) {
+    if (brightness == BRIGHTNESS || brightness == 0)
+    {
       fadeDirection *= -1;
     }
 
@@ -265,8 +283,10 @@ void handelAmberPulse() {
 }
 
 ///@brief Static rainbow effect
-void handleStaticRainbow() {
-  for (int i = 0; i < NUM_LEDS; i++) {
+void handleStaticRainbow()
+{
+  for (int i = 0; i < NUM_LEDS; i++)
+  {
     strip.setPixelColor(i, Adafruit_NeoPixel::ColorHSV(i * 65536L / NUM_LEDS));
   }
   strip.setBrightness(BRIGHTNESS);
@@ -274,8 +294,10 @@ void handleStaticRainbow() {
 }
 
 ///@brief Moving rainbow effect
-void handleMovingRainbow() {
-  for (int i = 0; i < NUM_LEDS; i++) {
+void handleMovingRainbow()
+{
+  for (int i = 0; i < NUM_LEDS; i++)
+  {
     const uint16_t color = (i * 65536L / NUM_LEDS + state.rainbowOffset) % 65536;
     strip.setPixelColor(i, Adafruit_NeoPixel::ColorHSV(color));
   }
@@ -285,8 +307,10 @@ void handleMovingRainbow() {
 }
 
 ///@brief Rainbow chase effect
-void handleRainbowChase() {
-  for (int i = 0; i < NUM_LEDS; i++) {
+void handleRainbowChase()
+{
+  for (int i = 0; i < NUM_LEDS; i++)
+  {
     const uint16_t hue = ((static_cast<uint32_t>(i) * 1000UL) + state.rainbowOffset) % 65536;
     strip.setPixelColor(i, Adafruit_NeoPixel::ColorHSV(hue));
   }
@@ -296,22 +320,25 @@ void handleRainbowChase() {
 }
 
 ///@brief Handle off mode
-void handleOffMode() {
+void handleOffMode()
+{
   clearStrip();
   strip.setBrightness(0);
   updateStrip();
 }
 
 ///@brief Button handling
-void handleButton() {
+void handleButton()
+{
   const bool reading = digitalRead(BTN_PIN);
-
-  if (reading != state.lastButtonState) {
+  if (reading != state.lastButtonState)
+  {
     state.lastDebounceTime = millis();
   }
-
-  if ((millis() - state.lastDebounceTime) > DEBOUNCE_DELAY) {
-    if (state.currentButtonState == HIGH && reading == LOW) {
+  if ((millis() - state.lastDebounceTime) > DEBOUNCE_DELAY)
+  {
+    if (state.currentButtonState == HIGH && reading == LOW)
+    {
       state.mode = (state.mode + 1) % NUM_MODES;
       EEPROM.write(MODE_ADDR, state.mode);
       blinkInbuiltLED();
@@ -321,52 +348,80 @@ void handleButton() {
   state.lastButtonState = reading;
 }
 
-
-void setup() {
-
-  uart.USART_Init(9600);
-
+void setup()
+{
   randomSeed(analogRead(0)); // Seed randomness
 
   pinMode(BTN_PIN, INPUT_PULLUP);
   pinMode(INBUILD_LED, OUTPUT);
   digitalWrite(INBUILD_LED, LOW); // Turn off inbuilt LED
 
-  // EEPROM.begin(1); // Not needed for AVR EEPROM
+// check if its ESP family
+#if defined(ESP8266) || defined(ESP32)
+  EEPROM.begin(MCU_EEPROM_SIZE);
+#else
   EEPROM.begin();
+#endif
+
   blinkInbuiltLED();
 
   state.mode = EEPROM.read(MODE_ADDR);
-  if (state.mode >= NUM_MODES) {
+  if (state.mode >= NUM_MODES)
+  {
     state.mode = 0; // Sanity check
   }
-
 
   strip.begin();
   strip.setBrightness(BRIGHTNESS);
   strip.show();
-
-  uart.println("system initialized");
-
 }
 
-void loop() {
+void loop()
+{
   //  Button Handling
   handleButton();
   // Handle the current mode
-  switch (static_cast<LightMode>(state.mode)) {
-    case RED:     handleStaticColor(createColor(255, 0, 0)); break; // Red color
-    case GREEN:   handleStaticColor(createColor(0, 255, 0)); break; // Green color
-    case BLUE:    handleStaticColor(createColor(0, 0, 255)); break; //
-    case CYAN_PULSE: handleCyanPulse(); break; // Cyan pulse effect
-    case STATIC_RAINBOW: handleStaticRainbow(); delay(50); break; // Static rainbow effect
-    case MOVING_RAINBOW: handleMovingRainbow(); delay(50); break; // Moving rainbow effect
-    case RAINBOW_CHASE: handleRainbowChase(); delay(100); break; // Rainbow chase effect
-    case AMBER:   handelAmberPulse(); break; // Amber color
-    case PURPLE:  handleStaticColor(createColor(128, 0, 128)); break; // Purple color
-    case WHITE:   handleStaticColor(createColor(255, 200, 255)); break; // White color
-    case RANDOM_FADE:   randomFadeAmber(millis()); break; // Sleep mode with sub-modes
-    case OFF:     handleOffMode(); break; // Off mode
+  switch (static_cast<LightMode>(state.mode))
+  {
+  case RED:
+    handleStaticColor(createColor(255, 0, 0));
+    break; // Red color
+  case GREEN:
+    handleStaticColor(createColor(0, 255, 0));
+    break; // Green color
+  case BLUE:
+    handleStaticColor(createColor(0, 0, 255));
+    break; //
+  case CYAN_PULSE:
+    handleCyanPulse();
+    break; // Cyan pulse effect
+  case STATIC_RAINBOW:
+    handleStaticRainbow();
+    delay(50);
+    break; // Static rainbow effect
+  case MOVING_RAINBOW:
+    handleMovingRainbow();
+    delay(50);
+    break; // Moving rainbow effect
+  case RAINBOW_CHASE:
+    handleRainbowChase();
+    delay(100);
+    break; // Rainbow chase effect
+  case AMBER:
+    handelAmberPulse();
+    break; // Amber color
+  case PURPLE:
+    handleStaticColor(createColor(128, 0, 128));
+    break; // Purple color
+  case WHITE:
+    handleStaticColor(createColor(255, 200, 255));
+    break; // White color
+  case RANDOM_FADE:
+    randomFadeAmber(millis());
+    break; // Sleep mode with sub-modes
+  case OFF:
+    handleOffMode();
+    break; // Off mode
   }
   delay(10);
 }
