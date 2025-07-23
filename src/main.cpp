@@ -31,14 +31,14 @@
  * 4: Copy the code into your Arduino IDE.
  * 5: Upload the sketch to your Arduino board.
  *
- * 
- * 
+ *
+ *
  */
 
 /*
  * Simulation Link:
  * https://wokwi.com/projects/432899754435850241
- * 
+ *
  * Project Link:
  * https://github.com/DRIFTYY777/WS2812B-ATmega8A
  *
@@ -259,7 +259,7 @@ void handleCyanPulse()
   }
 }
 
-void handelAmberPulse()
+void handleAmberPulse()
 {
   static uint8_t brightness = 0;
   static int8_t fadeDirection = 1;
@@ -383,45 +383,18 @@ void loop()
   // Handle the current mode
   switch (static_cast<LightMode>(state.mode))
   {
-  case RED:
-    handleStaticColor(createColor(255, 0, 0));
-    break; // Red color
-  case GREEN:
-    handleStaticColor(createColor(0, 255, 0));
-    break; // Green color
-  case BLUE:
-    handleStaticColor(createColor(0, 0, 255));
-    break; //
-  case CYAN_PULSE:
-    handleCyanPulse();
-    break; // Cyan pulse effect
-  case STATIC_RAINBOW:
-    handleStaticRainbow();
-    delay(50);
-    break; // Static rainbow effect
-  case MOVING_RAINBOW:
-    handleMovingRainbow();
-    delay(50);
-    break; // Moving rainbow effect
-  case RAINBOW_CHASE:
-    handleRainbowChase();
-    delay(100);
-    break; // Rainbow chase effect
-  case AMBER:
-    handelAmberPulse();
-    break; // Amber color
-  case PURPLE:
-    handleStaticColor(createColor(128, 0, 128));
-    break; // Purple color
-  case WHITE:
-    handleStaticColor(createColor(255, 200, 255));
-    break; // White color
-  case RANDOM_FADE:
-    randomFadeAmber(millis());
-    break; // Sleep mode with sub-modes
-  case OFF:
-    handleOffMode();
-    break; // Off mode
+    case RED:handleStaticColor(createColor(255, 0, 0));break;       // Red color
+    case GREEN:handleStaticColor(createColor(0, 255, 0));break;     // Green color
+    case BLUE:handleStaticColor(createColor(0, 0, 255));break;      // Blue color
+    case CYAN_PULSE:handleCyanPulse();break;                        // Cyan pulse effect
+    case STATIC_RAINBOW:handleStaticRainbow();delay(50);break;      // Static rainbow effect
+    case MOVING_RAINBOW:handleMovingRainbow();delay(50);break;      // Moving rainbow effect
+    case RAINBOW_CHASE:handleRainbowChase();delay(100);break;       // Rainbow chase effect
+    case AMBER:handleAmberPulse();break;                            // Amber color
+    case PURPLE:handleStaticColor(createColor(128, 0, 128));break;  // Purple color
+    case WHITE:handleStaticColor(createColor(255, 200, 255));break; // White color
+    case RANDOM_FADE:randomFadeAmber(millis());break;               // Sleep mode with sub-modes
+    case OFF:handleOffMode();break;                                 // Off mode
   }
   delay(10);
 }
