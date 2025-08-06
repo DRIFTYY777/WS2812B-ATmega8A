@@ -1,0 +1,53 @@
+Checking size .pio\build\ATmega8\firmware.elf
+Advanced Memory Usage is available via "PlatformIO Home > Project Inspect"
+RAM:   [==        ]  23.1% (used 237 bytes from 1024 bytes)
+Flash: [======    ]  61.2% (used 4778 bytes from 7808 bytes)
+Building .pio\build\ATmega8\firmware.hex
+
+
+
+Checking size .pio\build\ATmega88\firmware.elf
+Advanced Memory Usage is available via "PlatformIO Home > Project Inspect"
+RAM:   [==        ]  23.1% (used 237 bytes from 1024 bytes)
+Flash: [======    ]  62.8% (used 4902 bytes from 7808 bytes)
+Building .pio\build\ATmega88\firmware.hex
+
+
+
+Checking size .pio\build\ATmega168\firmware.elf
+Advanced Memory Usage is available via "PlatformIO Home > Project Inspect"
+RAM:   [==        ]  23.1% (used 237 bytes from 1024 bytes)
+Flash: [===       ]  32.1% (used 5132 bytes from 16000 bytes)
+Building .pio\build\ATmega168\firmware.hex
+
+
+
+Checking size .pio\build\ATmega328P\firmware.elf
+Advanced Memory Usage is available via "PlatformIO Home > Project Inspect"
+RAM:   [=         ]  11.6% (used 237 bytes from 2048 bytes)
+Flash: [==        ]  15.8% (used 5132 bytes from 32384 bytes)
+Building .pio\build\ATmega328P\firmware.hex
+
+
+
+Checking size .pio\build\ATTINY85\firmware.elf
+Advanced Memory Usage is available via "PlatformIO Home > Project Inspect"
+RAM:   [=====     ]  46.1% (used 236 bytes from 512 bytes)
+Flash: [======    ]  57.0% (used 4668 bytes from 8192 bytes)
+Building .pio\build\ATTINY85\firmware.hex
+
+
+
+Checking size .pio\build\esp8266\firmware.elf
+Advanced Memory Usage is available via "PlatformIO Home > Project Inspect"
+RAM:   [===       ]  34.6% (used 28356 bytes from 81920 bytes)
+Flash: [===       ]  34.8% (used 265071 bytes from 761840 bytes)
+Building .pio\build\esp8266\firmware.bin
+
+
+
+Checking size .pio\build\esp32\firmware.elf
+Advanced Memory Usage is available via "PlatformIO Home > Project Inspect"
+RAM:   [=         ]   6.5% (used 21420 bytes from 327680 bytes)
+Flash: [==        ]  24.9% (used 326400 bytes from 1310720 bytes)
+Building .pio\build\esp32\firmware.bin

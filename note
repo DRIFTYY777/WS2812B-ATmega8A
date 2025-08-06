@@ -146,11 +146,9 @@ int main()
     // Wait for a short time before sending the next color
     _delay_ms(1000);
 
-
-
     // Toggle PB1 to indicate completion
     PORTB ^= (1 << PB1);
   }
 
-    return 0;
+  return 0;
 }
