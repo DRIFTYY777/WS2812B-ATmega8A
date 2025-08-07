@@ -48,9 +48,7 @@
 #include <boards.h>
 #include <EEPROM.h>
 
-#if defined(__AVR_ATmega88__)
-// Note: For ATmega88 isn't supported by IRremote library
-#else
+#if !defined(__AVR_ATmega88__) // ATmega88 isn't supported by IRremote library
 #include <IRremote.hpp>
 #endif
 
@@ -62,7 +60,7 @@
 #define BRIGHTNESS 200 // Brightness level (0-255)
 
 // Buffer length for IR receiver Note: This is temporary now. Must change it later based on requirements.
-#define RAW_BUFFER_LENGTH 700 // we require 2 buffer of this size for this example
+// #define RAW_BUFFER_LENGTH 700 // we require 2 buffer of this size for this example
 
 // Timing constants
 constexpr unsigned long DEBOUNCE_DELAY = 50;
@@ -365,20 +363,52 @@ void handleButton()
  */
 void initIRReceiver()
 {
-#if defined(__AVR_ATmega88__)
-  //  IRremote does not support IRremote ATmega88
-#else
-  // ENABLE_LED_FEEDBACK and INBUILD_LED for testing purposes soo we can see the IR receiver is working
+#if !defined(__AVR_ATmega88__) // ATmega88 isn't supported by IRremote library
   IrReceiver.begin(IR_RECEIVE_PIN, ENABLE_LED_FEEDBACK, INBUILD_LED);
+  // ENABLE_LED_FEEDBACK, INBUILD_LED for testing purposes so we can see the IR receiver is working.
 #endif
 }
 
 /** @brief
  * Handles IR receive functionality.
  */
-void handleIRReceive()
+void handleIRReceive() // Currently this function is not used, but it can be used to handle IR receive functionality.
 {
-  // work for today
+  if (IrReceiver.decode())
+  {
+
+    IrReceiver.printIRResultShort(&Serial);
+    if (IrReceiver.decodedIRData.flags & IRDATA_FLAGS_WAS_OVERFLOW)
+    {
+      Serial.println("Try to increase the RAW_BUFFER_LENGTH value or if not defined define it in your sketch.");
+    }
+    else
+    {
+      if (IrReceiver.decodedIRData.protocol == UNKNOWN)
+      {
+        Serial.println(F("Received noise or an unknown (or not yet enabled) protocol"));
+      }
+      Serial.println();
+      IrReceiver.printIRSendUsage(&Serial);
+      Serial.println();
+      Serial.println(F("Raw result in internal ticks (50 us) - with leading gap"));
+      IrReceiver.printIRResultRawFormatted(&Serial, false); // Output the results in RAW format
+      Serial.println(F("Raw result in microseconds - with leading gap"));
+      IrReceiver.printIRResultRawFormatted(&Serial, true); // Output the results in RAW format
+      Serial.println();                                    // blank line between entries
+      Serial.print(F("Result as internal 8bit ticks (50 us) array - compensated with MARK_EXCESS_MICROS="));
+      Serial.println(MARK_EXCESS_MICROS);
+      IrReceiver.compensateAndPrintIRResultAsCArray(&Serial, false); // Output the results as uint8_t source code array of ticks
+      Serial.print(F("Result as microseconds array - compensated with MARK_EXCESS_MICROS="));
+      Serial.println(MARK_EXCESS_MICROS);
+      IrReceiver.compensateAndPrintIRResultAsCArray(&Serial, true); // Output the results as uint16_t source code array of micros
+      IrReceiver.printIRResultAsCVariables(&Serial);                // Output address and data as source code variables
+      Serial.println();                                             // blank line between entries
+
+      IrReceiver.compensateAndPrintIRResultAsPronto(&Serial);
+    }
+    IrReceiver.resume(); // Prepare for the next IR frame
+  }
 }
 
 void setup()
@@ -396,7 +426,7 @@ void setup()
   EEPROM.begin(); //
 #endif
 
-  blinkInbuiltLED();
+  blinkInbuiltLED(); // Indicate setup start
 
   initIRReceiver(); // Initialize IR receiver
 
@@ -418,18 +448,45 @@ void loop()
   // Handle the current mode
   switch (static_cast<LightMode>(state.mode))
   {
-    case RED:handleStaticColor(createColor(255, 0, 0));break; // Red color
-    case GREEN:handleStaticColor(createColor(0, 255, 0));break; // Green color
-    case BLUE:handleStaticColor(createColor(0, 0, 255));break; // Blue color
-    case CYAN_PULSE:handleCyanPulse();break; // Cyan pulse effect
-    case STATIC_RAINBOW:handleStaticRainbow();delay(50);break; // Static rainbow effect
-    case MOVING_RAINBOW:handleMovingRainbow();delay(50);break; // Moving rainbow effect
-    case RAINBOW_CHASE:handleRainbowChase();delay(100);break; // Rainbow chase effect
-    case AMBER:handleAmberPulse();break; // Amber color
-    case PURPLE:handleStaticColor(createColor(128, 0, 128));break; // Purple color
-    case WHITE:handleStaticColor(createColor(255, 200, 255));break; // White color
-    case RANDOM_FADE:randomFadeAmber(millis());break; // Sleep mode with sub-modes
-    case OFF:handleOffMode();break; // Off mode
+  case RED:
+    handleStaticColor(createColor(255, 0, 0));
+    break; // Red color
+  case GREEN:
+    handleStaticColor(createColor(0, 255, 0));
+    break; // Green color
+  case BLUE:
+    handleStaticColor(createColor(0, 0, 255));
+    break; // Blue color
+  case CYAN_PULSE:
+    handleCyanPulse();
+    break; // Cyan pulse effect
+  case STATIC_RAINBOW:
+    handleStaticRainbow();
+    delay(50);
+    break; // Static rainbow effect
+  case MOVING_RAINBOW:
+    handleMovingRainbow();
+    delay(50);
+    break; // Moving rainbow effect
+  case RAINBOW_CHASE:
+    handleRainbowChase();
+    delay(100);
+    break; // Rainbow chase effect
+  case AMBER:
+    handleAmberPulse();
+    break; // Amber color
+  case PURPLE:
+    handleStaticColor(createColor(128, 0, 128));
+    break; // Purple color
+  case WHITE:
+    handleStaticColor(createColor(255, 200, 255));
+    break; // White color
+  case RANDOM_FADE:
+    randomFadeAmber(millis());
+    break; // Sleep mode with sub-modes
+  case OFF:
+    handleOffMode();
+    break; // Off mode
   }
   delay(10);
 }
