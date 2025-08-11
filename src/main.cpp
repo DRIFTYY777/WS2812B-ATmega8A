@@ -45,7 +45,7 @@
  */
 
 #include <Adafruit_NeoPixel.h>
-#include <boards.h>
+#include "boards.h"
 #include <EEPROM.h>
 
 #if !defined(__AVR_ATmega88__) // ATmega88 isn't supported by IRremote library
@@ -61,6 +61,31 @@
 
 // Buffer length for IR receiver Note: This is temporary now. Must change it later based on requirements.
 // #define RAW_BUFFER_LENGTH 700 // we require 2 buffer of this size for this example
+
+
+const uint32_t encoded[] =
+{
+  0xFFA25D, // Power	        162
+  0xFFE21D, // Menu	          226
+  0xFF22DD, // Test	          34
+  0xFF02FD, // Plus	          2
+  0xFFC23D, // Back	          194
+  0xFFE01F, // Previous	      224
+  0xFFA857, // Play	          168
+  0xFF906F, // Next	          144
+  0xFF6897, // 0	            104
+  0xFF9867, // Minus	        152
+  0xFFB04F, // C	            176
+  0xFF30CF, // 1	            48
+  0xFF18E7, // 2	            24
+  0xFF7A85, // 3	            122
+  0xFF10EF, // 4	            16
+  0xFF38C7, // 5	            56
+  0xFF5AA5, // 6	            90
+  0xFF42BD, // 7	            66
+  0xFF4AB5, // 8	            74
+  0xFF52AD  // 9	            82
+};
 
 // Timing constants
 constexpr unsigned long DEBOUNCE_DELAY = 50;
@@ -131,7 +156,7 @@ struct SystemState
 } state;
 
 // Utility functions
-inline uint8_t sineFade(float progress)
+inline uint8_t sineFade(const float progress)
 {
   return static_cast<uint8_t>(127.5f * (1.0f + sin(progress * PI * 2.0f - PI / 2.0f)));
 }
@@ -160,7 +185,8 @@ void blinkInbuiltLED()
 }
 
 ///@brief Handles the transitionFade between two colors.
-void transitionFade(uint32_t colorFrom, uint32_t colorTo, uint8_t steps, uint16_t delayMs)
+void transitionFade(const uint32_t colorFrom, const uint32_t colorTo,
+  const uint8_t steps, const uint16_t delayMs)
 {
   const float stepSize = 1.0f / steps;
 
@@ -374,41 +400,9 @@ void initIRReceiver()
  */
 void handleIRReceive() // Currently this function is not used, but it can be used to handle IR receive functionality.
 {
-  if (IrReceiver.decode())
-  {
+#if !defined(__AVR_ATmega88__) // ATmega88 isn't supported by IRremote library
 
-    IrReceiver.printIRResultShort(&Serial);
-    if (IrReceiver.decodedIRData.flags & IRDATA_FLAGS_WAS_OVERFLOW)
-    {
-      Serial.println("Try to increase the RAW_BUFFER_LENGTH value or if not defined define it in your sketch.");
-    }
-    else
-    {
-      if (IrReceiver.decodedIRData.protocol == UNKNOWN)
-      {
-        Serial.println(F("Received noise or an unknown (or not yet enabled) protocol"));
-      }
-      Serial.println();
-      IrReceiver.printIRSendUsage(&Serial);
-      Serial.println();
-      Serial.println(F("Raw result in internal ticks (50 us) - with leading gap"));
-      IrReceiver.printIRResultRawFormatted(&Serial, false); // Output the results in RAW format
-      Serial.println(F("Raw result in microseconds - with leading gap"));
-      IrReceiver.printIRResultRawFormatted(&Serial, true); // Output the results in RAW format
-      Serial.println();                                    // blank line between entries
-      Serial.print(F("Result as internal 8bit ticks (50 us) array - compensated with MARK_EXCESS_MICROS="));
-      Serial.println(MARK_EXCESS_MICROS);
-      IrReceiver.compensateAndPrintIRResultAsCArray(&Serial, false); // Output the results as uint8_t source code array of ticks
-      Serial.print(F("Result as microseconds array - compensated with MARK_EXCESS_MICROS="));
-      Serial.println(MARK_EXCESS_MICROS);
-      IrReceiver.compensateAndPrintIRResultAsCArray(&Serial, true); // Output the results as uint16_t source code array of micros
-      IrReceiver.printIRResultAsCVariables(&Serial);                // Output address and data as source code variables
-      Serial.println();                                             // blank line between entries
-
-      IrReceiver.compensateAndPrintIRResultAsPronto(&Serial);
-    }
-    IrReceiver.resume(); // Prepare for the next IR frame
-  }
+#endif
 }
 
 void setup()
@@ -427,7 +421,6 @@ void setup()
 #endif
 
   blinkInbuiltLED(); // Indicate setup start
-
   initIRReceiver(); // Initialize IR receiver
 
   state.mode = EEPROM.read(MODE_ADDR);
@@ -448,45 +441,20 @@ void loop()
   // Handle the current mode
   switch (static_cast<LightMode>(state.mode))
   {
-  case RED:
-    handleStaticColor(createColor(255, 0, 0));
-    break; // Red color
-  case GREEN:
-    handleStaticColor(createColor(0, 255, 0));
-    break; // Green color
-  case BLUE:
-    handleStaticColor(createColor(0, 0, 255));
-    break; // Blue color
-  case CYAN_PULSE:
-    handleCyanPulse();
-    break; // Cyan pulse effect
-  case STATIC_RAINBOW:
-    handleStaticRainbow();
-    delay(50);
-    break; // Static rainbow effect
-  case MOVING_RAINBOW:
-    handleMovingRainbow();
-    delay(50);
-    break; // Moving rainbow effect
-  case RAINBOW_CHASE:
-    handleRainbowChase();
-    delay(100);
-    break; // Rainbow chase effect
-  case AMBER:
-    handleAmberPulse();
-    break; // Amber color
-  case PURPLE:
-    handleStaticColor(createColor(128, 0, 128));
-    break; // Purple color
-  case WHITE:
-    handleStaticColor(createColor(255, 200, 255));
-    break; // White color
-  case RANDOM_FADE:
-    randomFadeAmber(millis());
-    break; // Sleep mode with sub-modes
-  case OFF:
-    handleOffMode();
-    break; // Off mode
+    case RED:handleStaticColor(createColor(255, 0, 0));break; // Red color
+    case GREEN:handleStaticColor(createColor(0, 255, 0));break; // Green color
+    case BLUE:handleStaticColor(createColor(0, 0, 255));break; // Blue color
+    case CYAN_PULSE:handleCyanPulse();break; // Cyan pulse effect
+    case STATIC_RAINBOW:handleStaticRainbow();delay(50);break; // Static rainbow effect
+    case MOVING_RAINBOW:handleMovingRainbow();delay(50);break; // Moving rainbow effect
+    case RAINBOW_CHASE:handleRainbowChase();delay(100);break; // Rainbow chase effect
+    case AMBER:handleAmberPulse();break; // Amber color
+    case PURPLE:handleStaticColor(createColor(128, 0, 128));break; // Purple color
+    case WHITE:handleStaticColor(createColor(255, 200, 255));break; // White color
+    case RANDOM_FADE:randomFadeAmber(millis());break; // Sleep mode with sub-modes
+    case OFF:handleOffMode();break; // Off mode
   }
   delay(10);
 }
+
+// End of the loop function

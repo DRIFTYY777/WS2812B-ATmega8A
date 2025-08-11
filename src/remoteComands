@@ -1,0 +1,21 @@
+Key	            Command         NEC encoded
+Power	        162	            0xFFA25D
+Menu	        226	            0xFFE21D
+Test	        34	            0xFF22DD
+Plus	        2	            0xFF02FD
+Back	        194	            0xFFC23D
+Previous	    224	            0xFFE01F
+Play	        168	            0xFFA857
+Next	        144	            0xFF906F
+0	            104	            0xFF6897
+Minus	        152	            0xFF9867
+C	            176	            0xFFB04F
+1	            48	            0xFF30CF
+2	            24	            0xFF18E7
+3	            122	            0xFF7A85
+4	            16	            0xFF10EF
+5	            56	            0xFF38C7
+6	            90	            0xFF5AA5
+7	            66	            0xFF42BD
+8	            74	            0xFF4AB5
+9	            82	            0xFF52AD
