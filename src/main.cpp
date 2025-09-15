@@ -47,9 +47,11 @@
 #include <Adafruit_NeoPixel.h>
 #include "boards.h"
 #include <EEPROM.h>
+#include <stdatomic.h>
 
 #if !defined(__AVR_ATmega88__) // ATmega88 isn't supported by IRremote library
 #include <IRremote.hpp>
+
 #endif
 
 /* Leds Counts */
@@ -63,44 +65,21 @@
 // #define RAW_BUFFER_LENGTH 700 // we require 2 buffer of this size for this example
 
 
-const uint32_t encoded[] =
-{
-  0xFFA25D, // Power	        162
-  0xFFE21D, // Menu	          226
-  0xFF22DD, // Test	          34
-  0xFF02FD, // Plus	          2
-  0xFFC23D, // Back	          194
-  0xFFE01F, // Previous	      224
-  0xFFA857, // Play	          168
-  0xFF906F, // Next	          144
-  0xFF6897, // 0	            104
-  0xFF9867, // Minus	        152
-  0xFFB04F, // C	            176
-  0xFF30CF, // 1	            48
-  0xFF18E7, // 2	            24
-  0xFF7A85, // 3	            122
-  0xFF10EF, // 4	            16
-  0xFF38C7, // 5	            56
-  0xFF5AA5, // 6	            90
-  0xFF42BD, // 7	            66
-  0xFF4AB5, // 8	            74
-  0xFF52AD  // 9	            82
-};
-
 // Timing constants
 constexpr unsigned long DEBOUNCE_DELAY = 50;
 constexpr unsigned long FADE_UPDATE_INTERVAL = 30;
 constexpr unsigned long NEW_LED_INTERVAL = 500;
 
 // Mode constants
-constexpr int NUM_MODES = 12;
-constexpr int MAX_FADE_LEDS = 40;
-constexpr int ACTIVE_FADE_LIMIT = 30;
+constexpr uint8_t NUM_MODES = 12;
+constexpr uint8_t MAX_FADE_LEDS = 40;
+constexpr uint8_t ACTIVE_FADE_LIMIT = 30;
 
 /**
  * @brief NeoPixel LED strip instance
  */
 Adafruit_NeoPixel strip(NUM_LEDS, DATA_PIN, NEO_GRB + NEO_KHZ800);
+// decode_results results;
 
 /*
  *Global LED modes
@@ -141,7 +120,7 @@ struct FadeLED
 // Global state
 struct SystemState
 {
-  int mode = 0;
+  uint8_t mode = 0;
   bool lastButtonState = HIGH;
   bool currentButtonState = HIGH;
   unsigned long lastDebounceTime = 0;
@@ -179,9 +158,9 @@ void updateStrip()
 /// @brief Blinks the inbuilt LED to indicate a mode change.
 void blinkInbuiltLED()
 {
-  digitalWrite(INBUILD_LED, HIGH);
+  digitalWrite(INBUILD_LED, 1);
   delay(50);
-  digitalWrite(INBUILD_LED, LOW);
+  digitalWrite(INBUILD_LED, 0);
 }
 
 ///@brief Handles the transitionFade between two colors.
@@ -363,6 +342,25 @@ void handleOffMode()
   updateStrip();
 }
 
+///#handel modes with button and IR remote
+void handleModel() {
+  switch (static_cast<LightMode>(state.mode))
+  {
+    case RED:handleStaticColor(createColor(255, 0, 0));break; // Red color
+    case GREEN:handleStaticColor(createColor(0, 255, 0));break; // Green color
+    case BLUE:handleStaticColor(createColor(0, 0, 255));break; // Blue color
+    case CYAN_PULSE:handleCyanPulse();break; // Cyan pulse effect
+    case STATIC_RAINBOW:handleStaticRainbow();delay(50);break; // Static rainbow effect
+    case MOVING_RAINBOW:handleMovingRainbow();delay(50);break; // Moving rainbow effect
+    case RAINBOW_CHASE:handleRainbowChase();delay(100);break; // Rainbow chase effect
+    case AMBER:handleAmberPulse();break; // Amber color
+    case PURPLE:handleStaticColor(createColor(128, 0, 128));break; // Purple color
+    case WHITE:handleStaticColor(createColor(255, 200, 255));break; // White color
+    case RANDOM_FADE:randomFadeAmber(millis());break; // Sleep mode with sub-modes
+    case OFF:handleOffMode();break; // Off mode
+  }
+}
+
 ///@brief Button handling
 void handleButton()
 {
@@ -390,7 +388,10 @@ void handleButton()
 void initIRReceiver()
 {
 #if !defined(__AVR_ATmega88__) // ATmega88 isn't supported by IRremote library
-  IrReceiver.begin(IR_RECEIVE_PIN, ENABLE_LED_FEEDBACK, INBUILD_LED);
+  // IrReceiver.begin(IR_RECEIVE_PIN, ENABLE_LED_FEEDBACK, INBUILD_LED);
+
+  // set encoded to nec
+
   // ENABLE_LED_FEEDBACK, INBUILD_LED for testing purposes so we can see the IR receiver is working.
 #endif
 }
@@ -398,9 +399,12 @@ void initIRReceiver()
 /** @brief
  * Handles IR receive functionality.
  */
+
 void handleIRReceive() // Currently this function is not used, but it can be used to handle IR receive functionality.
 {
-#if !defined(__AVR_ATmega88__) // ATmega88 isn't supported by IRremote library
+#if !defined(__AVR_ATmega88__) // ATmega88 isn't supported by the IRremote library
+
+
 
 #endif
 }
@@ -408,6 +412,9 @@ void handleIRReceive() // Currently this function is not used, but it can be use
 void setup()
 {
   randomSeed(analogRead(0)); // Seed randomness
+
+  Serial.begin(115200);
+  Serial.println("init");
 
   pinMode(BTN_PIN, INPUT_PULLUP);
   pinMode(INBUILD_LED, OUTPUT);
@@ -438,22 +445,11 @@ void loop()
 {
   //  Button Handling
   handleButton();
+
+  handleIRReceive();
   // Handle the current mode
-  switch (static_cast<LightMode>(state.mode))
-  {
-    case RED:handleStaticColor(createColor(255, 0, 0));break; // Red color
-    case GREEN:handleStaticColor(createColor(0, 255, 0));break; // Green color
-    case BLUE:handleStaticColor(createColor(0, 0, 255));break; // Blue color
-    case CYAN_PULSE:handleCyanPulse();break; // Cyan pulse effect
-    case STATIC_RAINBOW:handleStaticRainbow();delay(50);break; // Static rainbow effect
-    case MOVING_RAINBOW:handleMovingRainbow();delay(50);break; // Moving rainbow effect
-    case RAINBOW_CHASE:handleRainbowChase();delay(100);break; // Rainbow chase effect
-    case AMBER:handleAmberPulse();break; // Amber color
-    case PURPLE:handleStaticColor(createColor(128, 0, 128));break; // Purple color
-    case WHITE:handleStaticColor(createColor(255, 200, 255));break; // White color
-    case RANDOM_FADE:randomFadeAmber(millis());break; // Sleep mode with sub-modes
-    case OFF:handleOffMode();break; // Off mode
-  }
+  handleModel();
+
   delay(10);
 }
 
