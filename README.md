@@ -155,11 +155,13 @@ You can find the circuit schematic below:
 
 | Board Type | Data Pin | Button Pin | Status LED |
 |------------|----------|------------|------------|
-| ATmega8A | A2 | A3 | Pin 9 |
-| ATmega88/168/328P | Pin 2 | Pin 3 | Pin 13 (Built-in) |
+| ATmega8A | A2 | Pin 2 (INT0) | Pin 9 |
+| ATmega88/168/328P | Pin 4 | Pin 2 (INT0) | Pin 13 (Built-in) |
 | ATtiny85 | Pin 0 | Pin 1 | Pin 2 |
-| ESP8266 | GPIO4 | GPIO0 | GPIO2 (Built-in) |
-| ESP32 | GPIO4 | GPIO0 | GPIO2 (Built-in) |
+| ESP8266 | GPIO4 | GPIO0 (INT) | GPIO2 (Built-in) |
+| ESP32 | GPIO4 | GPIO0 (INT) | GPIO2 (Built-in) |
+
+> ⚡ **Note**: Button pins are now interrupt-capable for better responsiveness and lower power consumption.
 
 ### 📥 Installation
 

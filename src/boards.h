@@ -11,7 +11,7 @@
 #define MCU_FLASH_SIZE 8192
 #define MCU_EEPROM_SIZE 512
 #define DATA_PIN A2       // ARGB pin  (PA2)
-#define BTN_PIN A3        // Button pin on board (PA3)
+#define BTN_PIN 2         // Button pin on INT0 (PD2) - Changed for interrupt support
 #define INBUILD_LED 9     // Inbuilt LED pin (PB1)
 #define IR_RECEIVE_PIN 10 // IR receive pin (PB2)
 
@@ -19,24 +19,24 @@
 #define MCU_NAME "ATmega48"
 #define MCU_FLASH_SIZE 4096
 #define MCU_EEPROM_SIZE 256
-#define DATA_PIN 2     // ARGB pin  (PB2)
-#define BTN_PIN 3      // Button pin on board (PB3)
+#define DATA_PIN 4     // ARGB pin  (PB2) - Changed to avoid conflict
+#define BTN_PIN 2      // Button pin on INT0 (PD2) - interrupt capable
 #define INBUILD_LED 13 // Inbuilt LED pin (PB5)
 
 #elif defined(__AVR_ATmega88__)
 #define MCU_NAME "ATmega88"
 #define MCU_FLASH_SIZE 8192
 #define MCU_EEPROM_SIZE 512
-#define DATA_PIN 2        // ARGB pin (PB2)
-#define BTN_PIN 3         // Button pin on board (PB3)
+#define DATA_PIN 4        // ARGB pin (PB2) - Changed to avoid conflict
+#define BTN_PIN 2         // Button pin on INT0 (PD2) - interrupt capable
 #define INBUILD_LED 13    // Inbuilt LED pin (PB5)
 
 #elif defined(__AVR_ATmega168__) // ATmega168
 #define MCU_NAME "ATmega168"
 #define MCU_FLASH_SIZE 16384
 #define MCU_EEPROM_SIZE 512
-#define DATA_PIN 2        // ARGB pin (PB2)
-#define BTN_PIN 3         // Button pin on board (PB3)
+#define DATA_PIN 4        // ARGB pin (PB2) - Changed to avoid conflict
+#define BTN_PIN 2         // Button pin on INT0 (PD2) - interrupt capable
 #define INBUILD_LED 13    // Inbuilt LED pin (PB5)
 #define IR_RECEIVE_PIN 10 // IR receive pin (PB2)
 
@@ -44,8 +44,8 @@
 #define MCU_NAME "ATmega328P"
 #define MCU_FLASH_SIZE 32768
 #define MCU_EEPROM_SIZE 1024
-#define DATA_PIN 2              // ARGB pin (PB2)
-#define BTN_PIN 3               // Button pin on board (PB3)
+#define DATA_PIN 4              // ARGB pin (PB2) - Changed to avoid conflict
+#define BTN_PIN 2               // Button pin on INT0 (PD2) - interrupt capable
 #define INBUILD_LED LED_BUILTIN // Inbuilt LED pin (PB5)
 #define IR_RECEIVE_PIN 10       // IR receive pin (PB2)
 

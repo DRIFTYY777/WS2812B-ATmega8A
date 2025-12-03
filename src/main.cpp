@@ -47,11 +47,14 @@
 #include <Adafruit_NeoPixel.h>
 #include "boards.h"
 #include <EEPROM.h>
-#include <stdatomic.h>
+
+// #if defined(ESP32)
+// #include <stdatomic.h>
+// #endif
+
 
 #if !defined(__AVR_ATmega88__) // ATmega88 isn't supported by IRremote library
 #include <IRremote.hpp>
-
 #endif
 
 /* Leds Counts */
@@ -121,8 +124,7 @@ struct FadeLED
 struct SystemState
 {
   uint8_t mode = 0;
-  bool lastButtonState = HIGH;
-  bool currentButtonState = HIGH;
+  volatile bool buttonPressed = false; // Changed: Add interrupt flag
   unsigned long lastDebounceTime = 0;
   uint16_t rainbowOffset = 0;
 
@@ -361,25 +363,30 @@ void handleModel() {
   }
 }
 
-///@brief Button handling
+///@brief Button interrupt
+void buttonISR()
+{
+  static unsigned long lastInterruptTime = 0;
+  unsigned long interruptTime = millis();
+  
+  // Software debouncing in ISR
+  if (interruptTime - lastInterruptTime > DEBOUNCE_DELAY)
+  {
+    state.buttonPressed = true;
+  }
+  lastInterruptTime = interruptTime;
+}
+
+///@brief Handle button press (called from main loop)
 void handleButton()
 {
-  const bool reading = digitalRead(BTN_PIN);
-  if (reading != state.lastButtonState)
+  if (state.buttonPressed)
   {
-    state.lastDebounceTime = millis();
+    state.buttonPressed = false; // Clear flag
+    state.mode = (state.mode + 1) % NUM_MODES;
+    EEPROM.write(MODE_ADDR, state.mode);
+    blinkInbuiltLED();
   }
-  if ((millis() - state.lastDebounceTime) > DEBOUNCE_DELAY)
-  {
-    if (state.currentButtonState == HIGH && reading == LOW)
-    {
-      state.mode = (state.mode + 1) % NUM_MODES;
-      EEPROM.write(MODE_ADDR, state.mode);
-      blinkInbuiltLED();
-    }
-    state.currentButtonState = reading;
-  }
-  state.lastButtonState = reading;
 }
 
 /** @brief Initializes the IR receiver.
@@ -412,13 +419,17 @@ void handleIRReceive() // Currently this function is not used, but it can be use
 void setup()
 {
   randomSeed(analogRead(0)); // Seed randomness
-
-  Serial.begin(115200);
-  Serial.println("init");
-
   pinMode(BTN_PIN, INPUT_PULLUP);
   pinMode(INBUILD_LED, OUTPUT);
   digitalWrite(INBUILD_LED, LOW); // Turn off inbuilt LED
+
+  // Configure button interrupt (falling edge = button press)
+#if defined(ESP8266) || defined(ESP32)
+  attachInterrupt(digitalPinToInterrupt(BTN_PIN), buttonISR, FALLING);
+#else
+  // For AVR microcontrollers
+  attachInterrupt(digitalPinToInterrupt(BTN_PIN), buttonISR, FALLING);
+#endif
 
 // check if its ESP family
 #if defined(ESP8266) || defined(ESP32)
