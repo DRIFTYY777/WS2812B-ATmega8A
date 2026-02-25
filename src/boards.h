@@ -1,19 +1,25 @@
 #if !defined(BOARDS_H)
 #define BOARDS_H
 
-// For debug purposes
-// #define DATA_PIN 2
-// #define BTN_PIN 3
+// #define DEBUG_MODE
 
 // MCU Detection and Configuration
 #if defined(__AVR_ATmega8__) // ATmega8 and ATmega8A is the same
 #define MCU_NAME "ATmega8"
 #define MCU_FLASH_SIZE 8192
 #define MCU_EEPROM_SIZE 512
+
+#ifdef DEBUG_MODE
+#define DATA_PIN 2
+#define BTN_PIN 3
+#define INBUILD_LED 9
+#else
+
 #define DATA_PIN A2       // ARGB pin  (PA2)
 #define BTN_PIN 2         // Button pin on INT0 (PD2) - Changed for interrupt support
 #define INBUILD_LED 9     // Inbuilt LED pin (PB1)
 #define IR_RECEIVE_PIN 10 // IR receive pin (PB2)
+#endif
 
 #elif defined(__AVR_ATmega48__) // ATmega8A
 #define MCU_NAME "ATmega48"
@@ -27,9 +33,9 @@
 #define MCU_NAME "ATmega88"
 #define MCU_FLASH_SIZE 8192
 #define MCU_EEPROM_SIZE 512
-#define DATA_PIN 4        // ARGB pin (PB2) - Changed to avoid conflict
-#define BTN_PIN 2         // Button pin on INT0 (PD2) - interrupt capable
-#define INBUILD_LED 13    // Inbuilt LED pin (PB5)
+#define DATA_PIN 4     // ARGB pin (PB2) - Changed to avoid conflict
+#define BTN_PIN 2      // Button pin on INT0 (PD2) - interrupt capable
+#define INBUILD_LED 13 // Inbuilt LED pin (PB5)
 
 #elif defined(__AVR_ATmega168__) // ATmega168
 #define MCU_NAME "ATmega168"

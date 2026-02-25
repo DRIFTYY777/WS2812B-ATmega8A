@@ -52,7 +52,6 @@
 // #include <stdatomic.h>
 // #endif
 
-
 #if !defined(__AVR_ATmega88__) // ATmega88 isn't supported by IRremote library
 #include <IRremote.hpp>
 #endif
@@ -66,7 +65,6 @@
 
 // Buffer length for IR receiver Note: This is temporary now. Must change it later based on requirements.
 // #define RAW_BUFFER_LENGTH 700 // we require 2 buffer of this size for this example
-
 
 // Timing constants
 constexpr unsigned long DEBOUNCE_DELAY = 50;
@@ -124,7 +122,6 @@ struct FadeLED
 struct SystemState
 {
   uint8_t mode = 0;
-  volatile bool buttonPressed = false; // Changed: Add interrupt flag
   unsigned long lastDebounceTime = 0;
   uint16_t rainbowOffset = 0;
 
@@ -167,7 +164,7 @@ void blinkInbuiltLED()
 
 ///@brief Handles the transitionFade between two colors.
 void transitionFade(const uint32_t colorFrom, const uint32_t colorTo,
-  const uint8_t steps, const uint16_t delayMs)
+                    const uint8_t steps, const uint16_t delayMs)
 {
   const float stepSize = 1.0f / steps;
 
@@ -344,23 +341,59 @@ void handleOffMode()
   updateStrip();
 }
 
-///#handel modes with button and IR remote
-void handleModel() {
+/// #handel modes with button and IR remote
+void handleModel()
+{
   switch (static_cast<LightMode>(state.mode))
   {
-    case RED:handleStaticColor(createColor(255, 0, 0));break; // Red color
-    case GREEN:handleStaticColor(createColor(0, 255, 0));break; // Green color
-    case BLUE:handleStaticColor(createColor(0, 0, 255));break; // Blue color
-    case CYAN_PULSE:handleCyanPulse();break; // Cyan pulse effect
-    case STATIC_RAINBOW:handleStaticRainbow();delay(50);break; // Static rainbow effect
-    case MOVING_RAINBOW:handleMovingRainbow();delay(50);break; // Moving rainbow effect
-    case RAINBOW_CHASE:handleRainbowChase();delay(100);break; // Rainbow chase effect
-    case AMBER:handleAmberPulse();break; // Amber color
-    case PURPLE:handleStaticColor(createColor(128, 0, 128));break; // Purple color
-    case WHITE:handleStaticColor(createColor(255, 200, 255));break; // White color
-    case RANDOM_FADE:randomFadeAmber(millis());break; // Sleep mode with sub-modes
-    case OFF:handleOffMode();break; // Off mode
+  case RED:
+    handleStaticColor(createColor(255, 0, 0));
+    break; // Red color
+  case GREEN:
+    handleStaticColor(createColor(0, 255, 0));
+    break; // Green color
+  case BLUE:
+    handleStaticColor(createColor(0, 0, 255));
+    break; // Blue color
+  case CYAN_PULSE:
+    handleCyanPulse();
+    break; // Cyan pulse effect
+  case STATIC_RAINBOW:
+    handleStaticRainbow();
+    delay(50);
+    break; // Static rainbow effect
+  case MOVING_RAINBOW:
+    handleMovingRainbow();
+    delay(50);
+    break; // Moving rainbow effect
+  case RAINBOW_CHASE:
+    handleRainbowChase();
+    delay(100);
+    break; // Rainbow chase effect
+  case AMBER:
+    handleAmberPulse();
+    break; // Amber color
+  case PURPLE:
+    handleStaticColor(createColor(128, 0, 128));
+    break; // Purple color
+  case WHITE:
+    handleStaticColor(createColor(255, 200, 255));
+    break; // White color
+  case RANDOM_FADE:
+    randomFadeAmber(millis());
+    break; // Sleep mode with sub-modes
+  case OFF:
+    handleOffMode();
+    break; // Off mode
   }
+}
+
+///@brief Handle button press (called from main loop)
+void handleButton()
+{
+  state.mode = (state.mode + 1) % NUM_MODES;
+  EEPROM.write(MODE_ADDR, state.mode);
+  blinkInbuiltLED();
 }
 
 ///@brief Button interrupt
@@ -368,25 +401,13 @@ void buttonISR()
 {
   static unsigned long lastInterruptTime = 0;
   unsigned long interruptTime = millis();
-  
+
   // Software debouncing in ISR
   if (interruptTime - lastInterruptTime > DEBOUNCE_DELAY)
   {
-    state.buttonPressed = true;
+    handleButton(); // Call handleButton function when interrupt is triggered
   }
   lastInterruptTime = interruptTime;
-}
-
-///@brief Handle button press (called from main loop)
-void handleButton()
-{
-  if (state.buttonPressed)
-  {
-    state.buttonPressed = false; // Clear flag
-    state.mode = (state.mode + 1) % NUM_MODES;
-    EEPROM.write(MODE_ADDR, state.mode);
-    blinkInbuiltLED();
-  }
 }
 
 /** @brief Initializes the IR receiver.
@@ -410,8 +431,6 @@ void initIRReceiver()
 void handleIRReceive() // Currently this function is not used, but it can be used to handle IR receive functionality.
 {
 #if !defined(__AVR_ATmega88__) // ATmega88 isn't supported by the IRremote library
-
-
 
 #endif
 }
@@ -439,7 +458,7 @@ void setup()
 #endif
 
   blinkInbuiltLED(); // Indicate setup start
-  initIRReceiver(); // Initialize IR receiver
+  initIRReceiver();  // Initialize IR receiver
 
   state.mode = EEPROM.read(MODE_ADDR);
   if (state.mode >= NUM_MODES)
@@ -454,13 +473,11 @@ void setup()
 
 void loop()
 {
-  //  Button Handling
-  handleButton();
-
+  // IR Receive Handling
   handleIRReceive();
   // Handle the current mode
   handleModel();
-
+  //
   delay(10);
 }
 
