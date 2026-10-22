@@ -3,10 +3,13 @@
 /// @note Tested on ATmega8, Atmega328p only Currently with clock speed of 8MHz, 12MHz, and 16MHz.
 ///
 
+#if defined(__AVR__)
+
 #include "avr_ws2812b.h"
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
+
 #include <stdlib.h>
 #include <string.h>
 
@@ -128,10 +131,6 @@ void set_led_color(uint8_t led, uint8_t red, uint8_t green, uint8_t blue)
     if (!ledBuffer || led >= numLeds)
         return;
     uint8_t *p = &ledBuffer[led * 3];
-    // // WS2812 expects GRB order
-    // p[0] = ((uint16_t)green * brightness) / 255;
-    // p[1] = ((uint16_t)red * brightness) / 255;
-    // p[2] = ((uint16_t)blue * brightness) / 255;
 
     switch (currentColorOrder)
     {
@@ -832,3 +831,5 @@ void show_colors(void)
 }
 
 #endif // End of ATtiny85 check
+
+#endif

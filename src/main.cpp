@@ -72,8 +72,6 @@ constexpr uint8_t ACTIVE_FADE_LIMIT = 30;
 /// @return An instance of the WS2812B class that can be used to control the LED strip.
 WS2812B strip(DATA_PIN, NUM_LEDS);
 
-uint8_t DEBUG_VAR = 0; // Debug variable for testing purposes
-
 /*
  *Global LED modes
  *If adding new modes, make sure to update NUM_MODES accordingly
@@ -82,7 +80,6 @@ enum LightMode
 {
   RED = 0,
   GREEN,
-
   BLUE,
   CYAN_PULSE,
   STATIC_RAINBOW,
@@ -266,6 +263,7 @@ void handleCyanPulse()
   }
 }
 
+///@brief Amber pulse creator
 void handleAmberPulse()
 {
   static uint8_t brightness = 0;

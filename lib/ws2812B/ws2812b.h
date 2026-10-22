@@ -18,7 +18,7 @@
 #elif defined(ESP32) || defined(ESP8266)
 #include "esp/esp_ws2812b.h"
 #else
-#warning "TODO ESP32 and ESP8266 support for WS2812B library is not implemented yet."
+#warning "WS2812B library is not implemented for this MCU."
 #endif
 
 class WS2812B
