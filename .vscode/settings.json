@@ -73,5 +73,6 @@
   "files.associations": {
     "delay.h": "c",
     "note": "cpp"
-  }
+  },
+  "cmake.sourceDirectory": "D:/MCU/Arduino/WS2812B/lib/ws2812B/esp"
 }

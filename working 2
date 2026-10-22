@@ -1,0 +1,455 @@
+/**
+ * @file main.cpp
+ * @brief Arduino sketch for controlling a NeoPixel LED strip with various modes.
+ * @author DRIFTYY_777
+ * @date 2023-10-01
+ *
+ * This sketch allows you to control a NeoPixel LED strip with different lighting modes.
+ * The modes can be changed using a button, and the current mode is saved in EEPROM.
+ *
+ * WBS2812B LED strip is used in this example.
+ *
+ * Modes:
+ * 0: Red
+ * 1: Green
+ * 2: Blue
+ * 3: Cyan Pulse
+ * 4: Static Rainbow
+ * 5: ARGB-style Moving Rainbow
+ * 6: Rainbow Chase
+ * 7: Amber Pulse
+ * 8: Purple
+ * 9: White
+ * 10: Random Fade
+ * 11: Off
+ *
+ *
+ * Note this code also works with ATmega328p (Arduino uno) and other boards which support Arduino api.
+ * 1: Make sure to install the Adafruit NeoPixel library from the Library Manager.
+ * 2: Connect the NeoPixel data pin to the specified DATA_PIN.
+ * 3: Connect a button to the specified BTN_PIN.
+ * 4: Copy the code into your Arduino IDE.
+ * 5: Upload the sketch to your Arduino board.
+ *
+ *
+ *
+ */
+
+/*
+ * Simulation Link:
+ * https://wokwi.com/projects/432899754435850241
+ *
+ * Project Link:
+ * https://github.com/DRIFTYY777/WS2812B-ATmega8A
+ *
+ */
+
+#include "ws2812b.h"
+
+#include "boards.h"
+#include <EEPROM.h>
+
+/* Leds Counts */
+#define NUM_LEDS 66 // Number of LEDs in the strip
+#define MODE_ADDR 0 // EEPROM address to store mode
+
+// prevent leds burning out because we did not use any resistors and diode
+#define BRIGHTNESS 200 // Brightness level (0-255)
+
+// Buffer length for IR receiver Note: This is temporary now. Must change it later based on requirements.
+// #define RAW_BUFFER_LENGTH 700 // we require 2 buffer of this size for this example
+
+// Timing constants
+constexpr unsigned long DEBOUNCE_DELAY = 50;
+constexpr unsigned long FADE_UPDATE_INTERVAL = 30;
+constexpr unsigned long NEW_LED_INTERVAL = 500;
+
+// Mode constants
+constexpr uint8_t NUM_MODES = 12;
+constexpr uint8_t MAX_FADE_LEDS = 40;
+constexpr uint8_t ACTIVE_FADE_LIMIT = 30;
+
+/// @brief The WS2812B object represents the LED strip and provides methods to control it.
+/// @param  pin The pin number to which the data line of the LED strip is connected.
+/// @param  leds The number of LEDs in the strip.
+/// @return An instance of the WS2812B class that can be used to control the LED strip.
+WS2812B strip(DATA_PIN, NUM_LEDS);
+
+/*
+ *Global LED modes
+ *If adding new modes, make sure to update NUM_MODES accordingly
+ */
+enum LightMode
+{
+  RED = 0,
+  GREEN,
+
+  BLUE,
+  CYAN_PULSE,
+  STATIC_RAINBOW,
+  MOVING_RAINBOW,
+  RAINBOW_CHASE,
+  AMBER,
+  PURPLE,
+  WHITE,
+  RANDOM_FADE,
+  OFF
+};
+
+// Fade LED structure
+struct FadeLED
+{
+  uint8_t index;
+  uint8_t brightness;
+  int8_t direction;
+  bool active;
+
+  void reset()
+  {
+    brightness = 0;
+    direction = 1;
+    active = false;
+  }
+};
+
+// Global state
+struct SystemState
+{
+  uint8_t mode = 0;
+  unsigned long lastDebounceTime = 0;
+  uint16_t rainbowOffset = 0;
+
+  unsigned long lastFadeUpdate = 0;
+
+  // Random fade state
+  FadeLED fadeLeds[MAX_FADE_LEDS];
+  int activeFadeLeds = 0;
+  unsigned long lastNewLedTime = 0;
+} state;
+
+// Utility functions
+inline uint8_t sineFade(const float progress)
+{
+  return static_cast<uint8_t>(127.5f * (1.0f + sin(progress * PI * 2.0f - PI / 2.0f)));
+}
+
+inline uint32_t createColor(uint8_t r, uint8_t g, uint8_t b)
+{
+  //  return Adafruit_NeoPixel::Color(r, g, b);
+  return WS2812B::Color(r, g, b);
+}
+
+void clearStrip()
+{
+  strip.clear();
+}
+
+void updateStrip()
+{
+  strip.show();
+}
+
+/// @brief Blinks the inbuilt LED to indicate a mode change.
+void blinkInbuiltLED()
+{
+  digitalWrite(INBUILD_LED, 1);
+  delay(50);
+  digitalWrite(INBUILD_LED, 0);
+}
+
+///@brief Handles the transitionFade between two colors.
+void transitionFade(const uint32_t colorFrom, const uint32_t colorTo,
+                    const uint8_t steps, const uint16_t delayMs)
+{
+  const float stepSize = 1.0f / steps;
+
+  for (uint8_t i = 0; i <= steps; i++)
+  {
+    const float t = i * stepSize;
+    const float invT = 1.0f - t;
+
+    const uint8_t r = invT * ((colorFrom >> 16) & 0xFF) + t * ((colorTo >> 16) & 0xFF);
+    const uint8_t g = invT * ((colorFrom >> 8) & 0xFF) + t * ((colorTo >> 8) & 0xFF);
+    const uint8_t b = invT * (colorFrom & 0xFF) + t * (colorTo & 0xFF);
+
+    strip.fill(createColor(r, g, b));
+    updateStrip();
+    delay(delayMs);
+  }
+}
+
+/// @brief Handles the random fade effect.
+void randomFadeAmber(const unsigned long now)
+{
+  // Add new LEDs
+  if (state.activeFadeLeds < ACTIVE_FADE_LIMIT &&
+      now - state.lastNewLedTime > NEW_LED_INTERVAL)
+  {
+
+    for (int i = 0; i < MAX_FADE_LEDS; i++)
+    {
+      if (!state.fadeLeds[i].active)
+      {
+        state.fadeLeds[i].index = random(NUM_LEDS);
+        state.fadeLeds[i].brightness = 0;
+        state.fadeLeds[i].direction = 1;
+        state.fadeLeds[i].active = true;
+        state.activeFadeLeds++;
+        state.lastNewLedTime = now;
+        break;
+      }
+    }
+  }
+
+  // Update LEDs
+  if (now - state.lastFadeUpdate > FADE_UPDATE_INTERVAL)
+  {
+    clearStrip();
+
+    for (int i = 0; i < MAX_FADE_LEDS; i++)
+    {
+      if (state.fadeLeds[i].active)
+      {
+        state.fadeLeds[i].brightness += state.fadeLeds[i].direction * 5;
+
+        if (state.fadeLeds[i].brightness >= 255)
+        {
+          state.fadeLeds[i].brightness = 255;
+          state.fadeLeds[i].direction = -1;
+        }
+        else if (state.fadeLeds[i].brightness <= 0)
+        {
+          state.fadeLeds[i].brightness = 0;
+          state.fadeLeds[i].active = false;
+          state.activeFadeLeds--;
+        }
+
+        if (state.fadeLeds[i].active)
+        {
+          const uint8_t brightness = state.fadeLeds[i].brightness;
+          strip.setPixelColor(state.fadeLeds[i].index,
+                              createColor(brightness, brightness / 5, 0));
+        }
+      }
+    }
+    state.lastFadeUpdate = now;
+    updateStrip(); // Add this line to actually display the changes
+  }
+}
+
+///@brief Mode handlers
+void handleStaticColor(uint32_t color)
+{
+  strip.fill(color);
+  strip.setBrightness(BRIGHTNESS);
+  updateStrip();
+}
+
+// Handle cyan pulse effect
+void handleCyanPulse()
+{
+  static uint8_t brightness = 0;
+  static int8_t fadeDirection = 1;
+  static unsigned long lastPulseUpdate = 0;
+
+  if (millis() - lastPulseUpdate >= 5)
+  {
+    lastPulseUpdate = millis();
+    brightness += fadeDirection;
+
+    if (brightness == BRIGHTNESS || brightness == 0)
+    {
+      fadeDirection *= -1;
+    }
+
+    strip.fill(createColor(0, 255, 255));
+    strip.setBrightness(brightness);
+    updateStrip();
+  }
+}
+
+void handleAmberPulse()
+{
+  static uint8_t brightness = 0;
+  static int8_t fadeDirection = 1;
+  static unsigned long lastPulseUpdate = 0;
+
+  if (millis() - lastPulseUpdate >= 5)
+  {
+    lastPulseUpdate = millis();
+    brightness += fadeDirection;
+
+    if (brightness == BRIGHTNESS || brightness == 0)
+    {
+      fadeDirection *= -1;
+    }
+
+    // Amber color: RGB(255, 165, 0)
+    strip.fill(createColor(255, 165, 0));
+    strip.setBrightness(brightness);
+    updateStrip();
+  }
+}
+
+///@brief Static rainbow effect
+void handleStaticRainbow()
+{
+  for (int i = 0; i < NUM_LEDS; i++)
+  {
+    //  strip.setPixelColor(i, Adafruit_NeoPixel::ColorHSV(i * 65536L / NUM_LEDS));
+    strip.setPixelColor(i, WS2812B::ColorHSV(i * 65536L / NUM_LEDS));
+  }
+  strip.setBrightness(BRIGHTNESS);
+  updateStrip();
+}
+
+///@brief Moving rainbow effect
+void handleMovingRainbow()
+{
+  for (int i = 0; i < NUM_LEDS; i++)
+  {
+    const uint16_t color = (i * 65536L / NUM_LEDS + state.rainbowOffset) % 65536;
+    // strip.setPixelColor(i, Adafruit_NeoPixel::ColorHSV(color));
+    strip.setPixelColor(i, WS2812B::ColorHSV(color));
+  }
+  state.rainbowOffset += 256;
+  strip.setBrightness(BRIGHTNESS);
+  updateStrip();
+}
+
+///@brief Rainbow chase effect
+void handleRainbowChase()
+{
+  for (int i = 0; i < NUM_LEDS; i++)
+  {
+    const uint16_t hue = ((static_cast<uint32_t>(i) * 1000UL) + state.rainbowOffset) % 65536;
+    // strip.setPixelColor(i, Adafruit_NeoPixel::ColorHSV(hue));
+    strip.setPixelColor(i, WS2812B::ColorHSV(hue));
+  }
+  state.rainbowOffset += 1000;
+  strip.setBrightness(BRIGHTNESS);
+  updateStrip();
+}
+
+///@brief Handle off mode
+void handleOffMode()
+{
+  clearStrip();
+  strip.setBrightness(0);
+  updateStrip();
+}
+
+/// #handel modes with button and IR remote
+void handleModel()
+{
+  switch (static_cast<LightMode>(state.mode))
+  {
+  case RED:
+    handleStaticColor(createColor(255, 0, 0));
+    break; // Red color
+  case GREEN:
+    handleStaticColor(createColor(0, 255, 0));
+    break; // Green color
+  case BLUE:
+    handleStaticColor(createColor(0, 0, 255));
+    break; // Blue color
+  case CYAN_PULSE:
+    handleCyanPulse();
+    break; // Cyan pulse effect
+  case STATIC_RAINBOW:
+    handleStaticRainbow();
+    delay(50);
+    break; // Static rainbow effect
+  case MOVING_RAINBOW:
+    handleMovingRainbow();
+    delay(50);
+    break; // Moving rainbow effect
+  case RAINBOW_CHASE:
+    handleRainbowChase();
+    delay(100);
+    break; // Rainbow chase effect
+  case AMBER:
+    handleAmberPulse();
+    break; // Amber color
+  case PURPLE:
+    handleStaticColor(createColor(128, 0, 128));
+    break; // Purple color
+  case WHITE:
+    handleStaticColor(createColor(255, 200, 255));
+    break; // White color
+  case RANDOM_FADE:
+    randomFadeAmber(millis());
+    break; // Sleep mode with sub-modes
+  case OFF:
+    handleOffMode();
+    break; // Off mode
+  }
+}
+
+///@brief Handle button press (called from main loop)
+void handleButton()
+{
+  state.mode = (state.mode + 1) % NUM_MODES;
+  EEPROM.write(MODE_ADDR, state.mode);
+  blinkInbuiltLED();
+}
+
+///@brief Button interrupt
+void buttonISR()
+{
+  static unsigned long lastInterruptTime = 0;
+  unsigned long interruptTime = millis();
+
+  // Software debouncing in ISR
+  if (interruptTime - lastInterruptTime > DEBOUNCE_DELAY)
+  {
+    handleButton(); // Call handleButton function when interrupt is triggered
+  }
+  lastInterruptTime = interruptTime;
+}
+
+void setup()
+{
+  randomSeed(analogRead(0)); // Seed randomness
+  pinMode(BTN_PIN, INPUT_PULLUP);
+  pinMode(INBUILD_LED, OUTPUT);
+  digitalWrite(INBUILD_LED, LOW); // Turn off inbuilt LED
+
+  // Configure button interrupt (falling edge = button press)
+#if defined(ESP8266) || defined(ESP32)
+  attachInterrupt(digitalPinToInterrupt(BTN_PIN), buttonISR, FALLING);
+#else
+  // For AVR microcontrollers
+  attachInterrupt(digitalPinToInterrupt(BTN_PIN), buttonISR, FALLING);
+#endif
+
+// check if its ESP family
+#if defined(ESP8266) || defined(ESP32)
+  EEPROM.begin(MCU_EEPROM_SIZE);
+#else
+  EEPROM.begin(); //
+#endif
+
+  blinkInbuiltLED(); // Indicate setup start
+
+  state.mode = EEPROM.read(MODE_ADDR);
+  if (state.mode >= NUM_MODES)
+  {
+    state.mode = 0; // Sanity check
+  }
+
+  strip.begin();
+  strip.setBrightness(BRIGHTNESS);
+  strip.show();
+}
+
+void loop()
+{
+  // Handle the current mode
+  handleModel();
+
+  // Add a small delay to avoid overwhelming the CPU
+  delay(10);
+}
+
+// End of the loop function

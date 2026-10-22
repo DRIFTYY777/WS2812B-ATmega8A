@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "author": "DRIFTYY_777",
+  "editor": "wokwi",
+  "parts": [
+    { "type": "wokwi-arduino-uno", "id": "uno", "top": 0.6, "left": -0.6, "attrs": {} },
+    {
+      "type": "wokwi-led-ring",
+      "id": "ring1",
+      "top": -239.36,
+      "left": 29.99,
+      "attrs": { "pixels": "16" }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn1",
+      "top": -61,
+      "left": -105.6,
+      "attrs": { "color": "grey", "xray": "1" }
+    },
+    { "type": "wokwi-ir-receiver", "id": "ir1", "top": -1.35, "left": -97.78, "attrs": {} },
+    { "type": "wokwi-ir-remote", "id": "remote1", "top": -57.6, "left": -307.2, "attrs": {} }
+  ],
+  "connections": [
+    [ "ring1:VCC", "uno:5V", "red", [ "v48", "h192", "v259.2", "h-19.2" ] ],
+    [ "ir1:DAT", "uno:10", "green", [ "v19.2", "h57.6", "v-124.8", "h153.6" ] ],
+    [ "ir1:VCC", "uno:5V", "red", [ "v28.8", "h67.2", "v105.6", "h144" ] ],
+    [ "ring1:GND", "uno:GND.1", "black", [ "v76.8", "h28.8" ] ],
+    [ "ring1:GND", "btn1:1.r", "black", [ "v0" ] ],
+    [ "btn1:1.l", "ir1:GND", "green", [ "h-19.2", "v144", "h0", "v9.6", "h38.4" ] ],
+    [ "ring1:DIN", "uno:4", "green", [ "v38.4", "h96" ] ],
+    [ "btn1:2.r", "uno:2", "green", [ "h0" ] ]
+  ],
+  "serialMonitor": { "convertEol": false, "display": "auto", "newline": "lf" },
+  "dependencies": {}
+}

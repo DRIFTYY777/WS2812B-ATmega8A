@@ -1,0 +1,5 @@
+ADAFURIT
+Advanced Memory Usage is available via "PlatformIO Home > Project Inspect"
+RAM:   [=         ]  11.8% (used 242 bytes from 2048 bytes)
+Flash: [==        ]  16.0% (used 5176 bytes from 32384 bytes)
+Building .pio\build\ATmega328P\firmware.hex

@@ -44,17 +44,10 @@
  *
  */
 
-#include <Adafruit_NeoPixel.h>
+#include "ws2812b.h"
+
 #include "boards.h"
 #include <EEPROM.h>
-
-// #if defined(ESP32)
-// #include <stdatomic.h>
-// #endif
-
-#if !defined(__AVR_ATmega88__) // ATmega88 isn't supported by IRremote library
-#include <IRremote.hpp>
-#endif
 
 /* Leds Counts */
 #define NUM_LEDS 66 // Number of LEDs in the strip
@@ -62,9 +55,6 @@
 
 // prevent leds burning out because we did not use any resistors and diode
 #define BRIGHTNESS 200 // Brightness level (0-255)
-
-// Buffer length for IR receiver Note: This is temporary now. Must change it later based on requirements.
-// #define RAW_BUFFER_LENGTH 700 // we require 2 buffer of this size for this example
 
 // Timing constants
 constexpr unsigned long DEBOUNCE_DELAY = 50;
@@ -76,11 +66,13 @@ constexpr uint8_t NUM_MODES = 12;
 constexpr uint8_t MAX_FADE_LEDS = 40;
 constexpr uint8_t ACTIVE_FADE_LIMIT = 30;
 
-/**
- * @brief NeoPixel LED strip instance
- */
-Adafruit_NeoPixel strip(NUM_LEDS, DATA_PIN, NEO_GRB + NEO_KHZ800);
-// decode_results results;
+/// @brief The WS2812B object represents the LED strip and provides methods to control it.
+/// @param  pin The pin number to which the data line of the LED strip is connected.
+/// @param  leds The number of LEDs in the strip.
+/// @return An instance of the WS2812B class that can be used to control the LED strip.
+WS2812B strip(DATA_PIN, NUM_LEDS);
+
+uint8_t DEBUG_VAR = 0; // Debug variable for testing purposes
 
 /*
  *Global LED modes
@@ -90,6 +82,7 @@ enum LightMode
 {
   RED = 0,
   GREEN,
+
   BLUE,
   CYAN_PULSE,
   STATIC_RAINBOW,
@@ -141,7 +134,8 @@ inline uint8_t sineFade(const float progress)
 
 inline uint32_t createColor(uint8_t r, uint8_t g, uint8_t b)
 {
-  return Adafruit_NeoPixel::Color(r, g, b);
+  //  return Adafruit_NeoPixel::Color(r, g, b);
+  return WS2812B::Color(r, g, b);
 }
 
 void clearStrip()
@@ -190,7 +184,6 @@ void randomFadeAmber(const unsigned long now)
   if (state.activeFadeLeds < ACTIVE_FADE_LIMIT &&
       now - state.lastNewLedTime > NEW_LED_INTERVAL)
   {
-
     for (int i = 0; i < MAX_FADE_LEDS; i++)
     {
       if (!state.fadeLeds[i].active)
@@ -301,7 +294,8 @@ void handleStaticRainbow()
 {
   for (int i = 0; i < NUM_LEDS; i++)
   {
-    strip.setPixelColor(i, Adafruit_NeoPixel::ColorHSV(i * 65536L / NUM_LEDS));
+    //  strip.setPixelColor(i, Adafruit_NeoPixel::ColorHSV(i * 65536L / NUM_LEDS));
+    strip.setPixelColor(i, WS2812B::ColorHSV(i * 65536L / NUM_LEDS));
   }
   strip.setBrightness(BRIGHTNESS);
   updateStrip();
@@ -313,7 +307,8 @@ void handleMovingRainbow()
   for (int i = 0; i < NUM_LEDS; i++)
   {
     const uint16_t color = (i * 65536L / NUM_LEDS + state.rainbowOffset) % 65536;
-    strip.setPixelColor(i, Adafruit_NeoPixel::ColorHSV(color));
+    // strip.setPixelColor(i, Adafruit_NeoPixel::ColorHSV(color));
+    strip.setPixelColor(i, WS2812B::ColorHSV(color));
   }
   state.rainbowOffset += 256;
   strip.setBrightness(BRIGHTNESS);
@@ -326,7 +321,8 @@ void handleRainbowChase()
   for (int i = 0; i < NUM_LEDS; i++)
   {
     const uint16_t hue = ((static_cast<uint32_t>(i) * 1000UL) + state.rainbowOffset) % 65536;
-    strip.setPixelColor(i, Adafruit_NeoPixel::ColorHSV(hue));
+    // strip.setPixelColor(i, Adafruit_NeoPixel::ColorHSV(hue));
+    strip.setPixelColor(i, WS2812B::ColorHSV(hue));
   }
   state.rainbowOffset += 1000;
   strip.setBrightness(BRIGHTNESS);
@@ -346,18 +342,45 @@ void handleModel()
 {
   switch (static_cast<LightMode>(state.mode))
   {
-  case RED: handleStaticColor(createColor(255, 0, 0)); break; // Red color
-  case GREEN: handleStaticColor(createColor(0, 255, 0)); break; // Green color
-  case BLUE: handleStaticColor(createColor(0, 0, 255)); break; // Blue color
-  case CYAN_PULSE: handleCyanPulse(); break; // Cyan pulse effect
-  case STATIC_RAINBOW: handleStaticRainbow(); delay(50); break; // Static rainbow effect
-  case MOVING_RAINBOW: handleMovingRainbow(); delay(50); break; // Moving rainbow effect
-  case RAINBOW_CHASE: handleRainbowChase(); delay(100); break; // Rainbow chase effect
-  case AMBER: handleAmberPulse(); break; // Amber color
-  case PURPLE: handleStaticColor(createColor(128, 0, 128)); break; // Purple color
-  case WHITE: handleStaticColor(createColor(255, 200, 255)); break; // White color
-  case RANDOM_FADE: randomFadeAmber(millis()); break; // Sleep mode with sub-modes
-  case OFF: handleOffMode(); break; // Off mode
+  case RED:
+    handleStaticColor(createColor(255, 0, 0));
+    break; // Red color
+  case GREEN:
+    handleStaticColor(createColor(0, 255, 0));
+    break; // Green color
+  case BLUE:
+    handleStaticColor(createColor(0, 0, 255));
+    break; // Blue color
+  case CYAN_PULSE:
+    handleCyanPulse();
+    break; // Cyan pulse effect
+  case STATIC_RAINBOW:
+    handleStaticRainbow();
+    delay(50);
+    break; // Static rainbow effect
+  case MOVING_RAINBOW:
+    handleMovingRainbow();
+    delay(50);
+    break; // Moving rainbow effect
+  case RAINBOW_CHASE:
+    handleRainbowChase();
+    delay(100);
+    break; // Rainbow chase effect
+  case AMBER:
+    handleAmberPulse();
+    break; // Amber color
+  case PURPLE:
+    handleStaticColor(createColor(128, 0, 128));
+    break; // Purple color
+  case WHITE:
+    handleStaticColor(createColor(255, 200, 255));
+    break; // White color
+  case RANDOM_FADE:
+    randomFadeAmber(millis());
+    break; // Sleep mode with sub-modes
+  case OFF:
+    handleOffMode();
+    break; // Off mode
   }
 }
 
@@ -383,31 +406,6 @@ void buttonISR()
   lastInterruptTime = interruptTime;
 }
 
-/** @brief Initializes the IR receiver.
- *  @brief It's initializes based on the capabilities of MCU and the IRremote library.
- */
-void initIRReceiver()
-{
-#if !defined(__AVR_ATmega88__) // ATmega88 isn't supported by IRremote library
-  // IrReceiver.begin(IR_RECEIVE_PIN, ENABLE_LED_FEEDBACK, INBUILD_LED);
-
-  // set encoded to nec
-
-  // ENABLE_LED_FEEDBACK, INBUILD_LED for testing purposes so we can see the IR receiver is working.
-#endif
-}
-
-/** @brief
- * Handles IR receive functionality.
- */
-
-void handleIRReceive() // Currently this function is not used, but it can be used to handle IR receive functionality.
-{
-#if !defined(__AVR_ATmega88__) // ATmega88 isn't supported by the IRremote library
-
-#endif
-}
-
 void setup()
 {
   randomSeed(analogRead(0)); // Seed randomness
@@ -431,7 +429,6 @@ void setup()
 #endif
 
   blinkInbuiltLED(); // Indicate setup start
-  initIRReceiver();  // Initialize IR receiver
 
   state.mode = EEPROM.read(MODE_ADDR);
   if (state.mode >= NUM_MODES)
@@ -446,11 +443,9 @@ void setup()
 
 void loop()
 {
-  // IR Receive Handling
-  handleIRReceive();
   // Handle the current mode
   handleModel();
-  //
+  // Add a small delay to avoid overwhelming the CPU
   delay(10);
 }
 

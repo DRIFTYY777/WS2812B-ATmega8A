@@ -1,0 +1,64 @@
+#include "../avr_ws2812b.h"
+
+#include <avr/io.h>
+#include <util/delay.h>
+
+#define LED_PIN 6  // same pinout as Arduino, pin 6 is on PORTD, bit 6
+#define NUM_LEDS 8 //  max 255
+
+int main()
+{
+    // Initialize the WS2812B library with the specified pin and number of LEDs
+    init_ws2812b(LED_PIN, NUM_LEDS);
+    // Set the color order for the WS2812B LEDs (default is GRB)
+    set_brightness(128); // Set brightness to 50% (0-255)
+    // Set all LEDs to blue
+    set_colors(0, 0, 255); // Set all LEDs to blue
+    // Update the display with the current LED colors
+    show_colors(); // Update the display with the current LED colors
+    // delay for a while to see the blue color
+    _delay_ms(1000);
+    // clear all LEDs
+    clear_leds();
+    // Update the display with the current LED colors
+    show_colors(); // Update the display with the current LED colors
+
+    // Set all LEDs to red
+    set_colors(255, 0, 0); // Set all LEDs to red
+    // Update the display with the current LED colors
+    show_colors(); // Update the display with the current LED colors
+    // delay for a while to see the red color
+    _delay_ms(1000);
+    // clear all LEDs
+    clear_leds();
+    // Update the display with the current LED colors
+    show_colors(); // Update the display with the current LED colors
+
+    // Set all LEDs to green
+    set_colors(0, 255, 0); // Set all LEDs to green
+    // Update the display with the current LED colors
+    show_colors(); // Update the display with the current LED colors
+    // delay for a while to see the green color
+    _delay_ms(1000);
+    // clear all LEDs
+    clear_leds();
+    // Update the display with the current LED colors
+    show_colors(); // Update the display with the current LED colors
+
+    set_led_color(0, 255, 0, 0); // Set the first LED to red
+    set_led_color(1, 0, 255, 0); // Set the second LED to green
+    set_led_color(2, 0, 0, 255); // Set the third LED to blue
+    // Update the display with the current LED colors
+    show_colors(); // Update the display with the current LED colors
+    // delay for a while to see the colors
+    _delay_ms(1000);
+    // clear all LEDs
+    clear_leds();
+    // Update the display with the current LED colors
+    show_colors(); // Update the display with the current LED colors
+
+    // Deinitialize the WS2812B library, freeing any allocated resources
+    deinit_ws2812b();
+
+    return 0;
+}
